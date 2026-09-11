@@ -10,6 +10,9 @@ type FilterBarProps = {
   leagues: (number | string)[]
   league: string
   onLeagueChange: (v: string) => void
+  group: string
+  onGroupChange: (v: string) => void
+  groupOptions: string[]
   jornadas: JornadaOption[]
   jornada: number | null
   onJornadaChange: (v: number | null) => void
@@ -47,6 +50,9 @@ export function FilterBar({
   leagues,
   league,
   onLeagueChange,
+  group,
+  onGroupChange,
+  groupOptions,
   jornadas,
   jornada,
   onJornadaChange,
@@ -59,19 +65,7 @@ export function FilterBar({
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Field label="Temporada">
-          <select className={`${selectClass} border-input focus:ring-orange`} defaultValue="2026-2027">
-            <option>2026-2027</option>
-            <option>2025-2026</option>
-          </select>
-        </Field>
-        <Field label="Modalidad">
-          <select className={`${selectClass} border-input focus:ring-orange`} defaultValue="MASCULÍ F11">
-            <option>MASCULÍ F11</option>
-            <option>FEMENÍ F11</option>
-          </select>
-        </Field>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
         <Field label="Competición" highlight>
           <select
             value={league}
@@ -79,16 +73,30 @@ export function FilterBar({
             className={`${selectClass} border-orange ring-2 ring-orange/40 focus:ring-orange`}
           >
             <option value="all">Todas las competiciones</option>
-            {leagues.map((l) => (
-              <option key={String(l)} value={String(l)}>
-                {`Liga ${l}`}
-              </option>
-            ))}
+            {leagues.map((l) => {
+              const value = String(l)
+              const label = Number.isFinite(Number(value))
+                ? `Tercera Federación · Grup VI · Liga ${value}`
+                : value
+              return (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              )
+            })}
           </select>
         </Field>
         <Field label="Grupo">
-          <select className={`${selectClass} border-input focus:ring-orange`} defaultValue="GRUP - VI">
-            <option>GRUP - VI</option>
+          <select
+            value={group}
+            onChange={(e) => onGroupChange(e.target.value)}
+            className={`${selectClass} border-input focus:ring-orange`}
+          >
+            {groupOptions.map((option) => (
+              <option key={option} value={option}>
+                {option === 'all' ? 'Todos los grupos' : option}
+              </option>
+            ))}
           </select>
         </Field>
       </div>

@@ -8,23 +8,45 @@ import { SiteHeader } from '@/components/site-header'
 import { formatLongDate, matchSortKey } from '@/lib/format'
 import type { Match } from '@/lib/types'
 
+function normalizeJornada(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const number = Number(String(value).trim())
+  return Number.isFinite(number) ? number : null
+}
+
+function normalizeLeague(value: unknown): string | null {
+  if (value === null || value === undefined || value === '') return null
+  const normalized = String(value).trim()
+  return normalized ? normalized : null
+}
+
 export function MatchesView({ matches }: { matches: Match[] }) {
   const [search, setSearch] = useState('')
   const [league, setLeague] = useState('all')
+  const [group, setGroup] = useState('all')
   const [jornada, setJornada] = useState<number | null>(null)
   const [date, setDate] = useState('')
 
   const leagues = useMemo(() => {
     const set = new Set<string>()
-    for (const m of matches) if (m.league_id != null) set.add(String(m.league_id))
-    return [...set].sort((a, b) => Number(a) - Number(b))
+    for (const m of matches) {
+      const normalized = normalizeLeague(m.league_id)
+      if (normalized) set.add(normalized)
+    }
+    return [...set].sort((a, b) => {
+      const aNum = Number(a)
+      const bNum = Number(b)
+      if (Number.isFinite(aNum) && Number.isFinite(bNum)) return aNum - bNum
+      return a.localeCompare(b)
+    })
   }, [matches])
 
   const jornadas = useMemo(() => {
     const map = new Map<number, string | null>()
     for (const m of matches) {
-      if (m.jornada == null) continue
-      if (!map.has(m.jornada)) map.set(m.jornada, m.match_date)
+      const normalized = normalizeJornada(m.jornada)
+      if (normalized == null) continue
+      if (!map.has(normalized)) map.set(normalized, m.match_date)
     }
     return [...map.entries()]
       .map(([value, d]) => ({ value, date: d }))
@@ -35,8 +57,8 @@ export function MatchesView({ matches }: { matches: Match[] }) {
     const q = search.trim().toLowerCase()
     return matches
       .filter((m) => {
-        if (league !== 'all' && String(m.league_id) !== league) return false
-        if (jornada !== null && m.jornada !== jornada) return false
+        if (league !== 'all' && normalizeLeague(m.league_id) !== league) return false
+        if (jornada !== null && normalizeJornada(m.jornada) !== jornada) return false
         if (date && m.match_date !== date) return false
         if (q) {
           const hay = `${m.home_team} ${m.away_team}`.toLowerCase()
@@ -61,10 +83,13 @@ export function MatchesView({ matches }: { matches: Match[] }) {
     return [...map.entries()]
   }, [filtered])
 
-  const hasFilters = search || league !== 'all' || jornada !== null || date
+  const groupOptions = useMemo(() => ['all', 'GRUP VI'], [])
+
+  const hasFilters = search || league !== 'all' || group !== 'all' || jornada !== null || date
   const clearAll = () => {
     setSearch('')
     setLeague('all')
+    setGroup('all')
     setJornada(null)
     setDate('')
   }
@@ -83,6 +108,9 @@ export function MatchesView({ matches }: { matches: Match[] }) {
             leagues={leagues}
             league={league}
             onLeagueChange={setLeague}
+            group={group}
+            onGroupChange={setGroup}
+            groupOptions={groupOptions}
             jornadas={jornadas}
             jornada={jornada}
             onJornadaChange={setJornada}
