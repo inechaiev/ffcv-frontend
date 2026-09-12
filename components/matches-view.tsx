@@ -21,12 +21,46 @@ function normalizeLeague(value: unknown): string | null {
 }
 
 const competitionInfo: Record<string, { name: string; group: string }> = {
-  // These are the five competitions currently present in the Supabase data.
-  '905431519': { name: 'Fútbol Femenino FFCV', group: 'Grupo VI' },
-  '905431547': { name: 'Liga FFCV', group: 'Grupo VI' },
-  '905431548': { name: 'Liga FFCV', group: 'Grupo VI' },
-  '905431605': { name: 'Tercera Federación', group: 'Grupo VI' },
-  '905431607': { name: 'Liga FFCV', group: 'Grupo VI' },
+  '905431605': { name: 'Tercera Federación', group: 'GRUP - VI' },
+  '905431822': { name: 'Lliga Comunitat', group: 'Grup Nord' },
+  '905431823': { name: 'Lliga Comunitat', group: 'Grup Sud' },
+  '905431607': { name: 'Primera FFCV', group: 'Grup - 1' },
+  '905431608': { name: 'Primera FFCV', group: 'Grup - 2' },
+  '905431609': { name: 'Primera FFCV', group: 'Grup - 3' },
+  '905431612': { name: 'Segona FFCV', group: 'Grup - 1' },
+  '905431613': { name: 'Segona FFCV', group: 'Grup - 2' },
+  '905431614': { name: 'Segona FFCV', group: 'Grup - 3' },
+  '905431615': { name: 'Segona FFCV', group: 'Grup - 4' },
+  '905431619': { name: 'Segona FFCV', group: 'Grup - 5' },
+  '905431616': { name: 'Segona FFCV', group: 'Grup - 6' },
+  '905431621': { name: 'Tercera FFCV', group: 'Grup - 1' },
+  '905431622': { name: 'Tercera FFCV', group: 'Grup - 2' },
+  '905431623': { name: 'Tercera FFCV', group: 'Grup - 3' },
+  '905431624': { name: 'Tercera FFCV', group: 'Grup - 4' },
+  '905431625': { name: 'Tercera FFCV', group: 'Grup - 5' },
+  '905431626': { name: 'Tercera FFCV', group: 'Grup - 6' },
+  '905431627': { name: 'Tercera FFCV', group: 'Grup - 7' },
+  '905431628': { name: 'Tercera FFCV', group: 'Grup - 8' },
+  '905431629': { name: 'Tercera FFCV', group: 'Grup - 9' },
+  '905431630': { name: 'Tercera FFCV', group: 'Grup - 10' },
+  '905431631': { name: 'Tercera FFCV', group: 'Grup - 11' },
+  '905432483': { name: 'VI La Nostra Copa', group: 'Competición' },
+  '905431879': { name: 'Liga Nacional Juvenil', group: 'Grup - VIII' },
+  '905431547': { name: 'Lliga Comunitat Juvenil', group: 'Nord' },
+  '905431548': { name: 'Lliga Comunitat Juvenil', group: 'Sud' },
+  '905431881': { name: 'Primera FFCV Juvenil', group: 'Grup - 1' },
+  '905431882': { name: 'Primera FFCV Juvenil', group: 'Grup - 2' },
+  '905431883': { name: 'Primera FFCV Juvenil', group: 'Grup - 3' },
+  '905431637': { name: 'Segona FFCV Juvenil', group: 'Grup - 1' },
+  '905431638': { name: 'Segona FFCV Juvenil', group: 'Grup - 2' },
+  '905431639': { name: 'Segona FFCV Juvenil', group: 'Grup - 3' },
+  '905431640': { name: 'Segona FFCV Juvenil', group: 'Grup - 4' },
+  '905431641': { name: 'Segona FFCV Juvenil', group: 'Grup - 5' },
+  '905431642': { name: 'Segona FFCV Juvenil', group: 'Grup - 6' },
+  '905431519': { name: 'Tercera Federación de Fútbol Femenino', group: 'Grupo VI' },
+  '905431877': { name: 'Lliga Autonòmica Valenta', group: 'Grup - Únic' },
+  '905431926': { name: '1ª Regional Valenta', group: 'Grup - 1' },
+  '905431927': { name: '1ª Regional Valenta', group: 'Grup - 2' },
 }
 
 function getCompetitionInfo(value: string | number | null) {
@@ -69,7 +103,11 @@ export function MatchesView({ matches }: { matches: Match[] }) {
 
   const jornadas = useMemo(() => {
     const map = new Map<number, string | null>()
-    for (const m of matches) {
+    for (const m of matches.filter((match) => {
+      if (league !== 'all' && normalizeLeague(match.league_id) !== league) return false
+      if (group !== 'all' && getCompetitionInfo(match.league_id).group !== group) return false
+      return true
+    })) {
       const normalized = normalizeJornada(m.jornada)
       if (normalized == null) continue
       if (!map.has(normalized)) map.set(normalized, m.match_date)
@@ -77,13 +115,14 @@ export function MatchesView({ matches }: { matches: Match[] }) {
     return [...map.entries()]
       .map(([value, d]) => ({ value, date: d }))
       .sort((a, b) => a.value - b.value)
-  }, [matches])
+  }, [matches, league, group])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return matches
       .filter((m) => {
         if (league !== 'all' && normalizeLeague(m.league_id) !== league) return false
+        if (group !== 'all' && getCompetitionInfo(m.league_id).group !== group) return false
         if (jornada !== null && normalizeJornada(m.jornada) !== jornada) return false
         if (date && m.match_date !== date) return false
         if (q) {
@@ -97,7 +136,7 @@ export function MatchesView({ matches }: { matches: Match[] }) {
           matchSortKey(b.match_date, b.match_time),
         ),
       )
-  }, [matches, league, jornada, date, search])
+  }, [matches, league, group, jornada, date, search])
 
   const groups = useMemo(() => {
     const map = new Map<string, Match[]>()
@@ -123,7 +162,7 @@ export function MatchesView({ matches }: { matches: Match[] }) {
   }, [filtered])
 
   const selectedLeagueLabel =
-    league === 'all' ? 'Tercera Federación · Grup VI' : formatLeagueLabel(league)
+    league === 'all' ? 'Competiciones FFCV' : formatLeagueLabel(league)
 
   const leagueLabels = useMemo(
     () => Object.fromEntries(leagues.map((value) => [value, formatLeagueLabel(value)])),
