@@ -68,7 +68,6 @@ export function FilterBar({
             onChange={(e) => onLeagueChange(e.target.value)}
             className={`${selectClass} border-orange ring-2 ring-orange/40 focus:ring-orange`}
           >
-            <option value="all">Todas las competiciones</option>
             {leagues.map((l) => {
               const value = String(l)
               return (

@@ -20,19 +20,45 @@ function normalizeLeagueName(value: unknown): string | null {
   return normalized ? normalized : null
 }
 
+function normalizeLeagueId(value: unknown): string | null {
+  if (value === null || value === undefined || value === '') return null
+  const normalized = String(value).trim()
+  return normalized || null
+}
+
+const fallbackLeagueNames: Record<string, string> = {
+  '905431605': 'Tercera Federación (GRUP - VI)',
+}
+
+function displayLeagueName(match: Match): string {
+  return normalizeLeagueName(match.league_name)
+    ?? fallbackLeagueNames[normalizeLeagueId(match.league_id) ?? '']
+    ?? `Liga ${normalizeLeagueId(match.league_id) ?? 'sin nombre'}`
+}
+
 export function MatchesView({ matches }: { matches: Match[] }) {
   const [search, setSearch] = useState('')
   const [league, setLeague] = useState('')
   const [jornada, setJornada] = useState<number | null>(null)
 
   const leagues = useMemo(() => {
-    return [...new Set(matches.map((m) => normalizeLeagueName(m.league_name)).filter(Boolean) as string[])]
-      .sort((a, b) => a.localeCompare(b))
+    return [...new Set(matches.map((m) => normalizeLeagueId(m.league_id)).filter(Boolean) as string[])]
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
   }, [matches])
+
+  const leagueLabels = useMemo(
+    () => Object.fromEntries(
+      leagues.map((value) => {
+        const firstMatch = matches.find((match) => normalizeLeagueId(match.league_id) === value)
+        return [value, displayLeagueName(firstMatch ?? { league_id: value, league_name: null } as Match)]
+      }),
+    ),
+    [leagues, matches],
+  )
 
   const jornadas = useMemo(() => {
     const map = new Map<number, string | null>()
-    for (const m of matches.filter((match) => normalizeLeagueName(match.league_name) === league)) {
+    for (const m of matches.filter((match) => normalizeLeagueId(match.league_id) === league)) {
       const normalized = normalizeJornada(m.jornada)
       if (normalized == null) continue
       if (!map.has(normalized)) map.set(normalized, m.match_date)
@@ -44,13 +70,14 @@ export function MatchesView({ matches }: { matches: Match[] }) {
 
   useEffect(() => {
     if (!leagues.length) return
-    const preferred = leagues.find((name) =>
-      name.toLocaleLowerCase().includes('tercera federación') &&
-      name.toLocaleLowerCase().includes('grup vi'),
-    )
+    const preferred = leagues.find((id) => {
+      const label = leagueLabels[id] ?? ''
+      return label.toLocaleLowerCase().includes('tercera federación') &&
+        label.toLocaleLowerCase().includes('grup vi')
+    })
     const nextLeague = league && leagues.includes(league) ? league : preferred ?? leagues[0]
     if (nextLeague !== league) setLeague(nextLeague)
-  }, [leagues, league])
+  }, [leagues, league, leagueLabels])
 
   useEffect(() => {
     if (jornadas.length && !jornadas.some((item) => item.value === jornada)) {
@@ -62,7 +89,7 @@ export function MatchesView({ matches }: { matches: Match[] }) {
     const q = search.trim().toLowerCase()
     return matches
       .filter((m) => {
-        if (normalizeLeagueName(m.league_name) !== league) return false
+        if (normalizeLeagueId(m.league_id) !== league) return false
         if (normalizeJornada(m.jornada) !== jornada) return false
         if (q) {
           const hay = `${m.home_team} ${m.away_team}`.toLowerCase()
@@ -94,8 +121,7 @@ export function MatchesView({ matches }: { matches: Match[] }) {
     })
   }, [filtered])
 
-  const leagueLabels = Object.fromEntries(leagues.map((value) => [value, value]))
-  const selectedLeagueLabel = league || 'Competiciones'
+  const selectedLeagueLabel = leagueLabels[league] ?? 'Competiciones'
 
   const hasFilters = search
   const clearAll = () => {
