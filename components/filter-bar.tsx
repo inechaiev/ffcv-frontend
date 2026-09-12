@@ -11,9 +11,6 @@ type FilterBarProps = {
   leagueLabels: Record<string, string>
   league: string
   onLeagueChange: (v: string) => void
-  group: string
-  onGroupChange: (v: string) => void
-  groupOptions: string[]
   jornadas: JornadaOption[]
   jornada: number | null
   onJornadaChange: (v: number | null) => void
@@ -52,9 +49,6 @@ export function FilterBar({
   leagueLabels,
   league,
   onLeagueChange,
-  group,
-  onGroupChange,
-  groupOptions,
   jornadas,
   jornada,
   onJornadaChange,
@@ -67,7 +61,7 @@ export function FilterBar({
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4">
         <Field label="Competición" highlight>
           <select
             value={league}
@@ -83,19 +77,6 @@ export function FilterBar({
                 </option>
               )
             })}
-          </select>
-        </Field>
-        <Field label="Grupo">
-          <select
-            value={group}
-            onChange={(e) => onGroupChange(e.target.value)}
-            className={`${selectClass} border-input focus:ring-orange`}
-          >
-            {groupOptions.map((option) => (
-              <option key={option} value={option}>
-                {option === 'all' ? 'Todos los grupos' : option}
-              </option>
-            ))}
           </select>
         </Field>
       </div>

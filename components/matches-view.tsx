@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react'
 import { FilterBar } from '@/components/filter-bar'
 import { MatchCard } from '@/components/match-card'
 import { SiteHeader } from '@/components/site-header'
-import { formatLongDate, matchSortKey } from '@/lib/format'
+import { matchSortKey } from '@/lib/format'
 import type { Match } from '@/lib/types'
 
 function normalizeJornada(value: unknown): number | null {
@@ -69,21 +69,12 @@ const fallbackLeagueNames: Record<string, string> = {
 function displayLeagueName(match: Match): string {
   const rawName = normalizeLeagueName(match.league_name)
   const fallbackName = fallbackLeagueNames[normalizeLeagueId(match.league_id) ?? '']
-  return rawName && (getGroupName(rawName) || !fallbackName)
-    ? rawName
-    : fallbackName ?? rawName ?? 'Competición sin nombre'
-}
-
-function getGroupName(leagueName: string | null): string | null {
-  if (!leagueName) return null
-  const match = leagueName.match(/(?:\(|-|·)\s*((?:GRUP|Grupo|Grup)\b[^)]*|Nord|Sud|Únic)\s*\)?$/i)
-  return match?.[1]?.trim() ?? null
+  return rawName ?? fallbackName ?? 'Competición sin nombre'
 }
 
 export function MatchesView({ matches }: { matches: Match[] }) {
   const [search, setSearch] = useState('')
   const [league, setLeague] = useState('all')
-  const [group, setGroup] = useState('all')
   const [jornada, setJornada] = useState<number | null>(null)
   const [date, setDate] = useState('')
 
@@ -102,7 +93,6 @@ export function MatchesView({ matches }: { matches: Match[] }) {
     const map = new Map<number, string | null>()
     for (const m of matches.filter((match) => {
       if (league !== 'all' && competitionKey(match) !== league) return false
-      if (group !== 'all' && getGroupName(displayLeagueName(match)) !== group) return false
       return true
     })) {
       const normalized = normalizeJornada(m.jornada)
@@ -112,14 +102,13 @@ export function MatchesView({ matches }: { matches: Match[] }) {
     return [...map.entries()]
       .map(([value, d]) => ({ value, date: d }))
       .sort((a, b) => a.value - b.value)
-  }, [matches, league, group])
+  }, [matches, league])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return matches
       .filter((m) => {
         if (league !== 'all' && competitionKey(m) !== league) return false
-        if (group !== 'all' && getGroupName(displayLeagueName(m)) !== group) return false
         if (jornada !== null && normalizeJornada(m.jornada) !== jornada) return false
         if (date && m.match_date !== date) return false
         if (q) {
@@ -133,25 +122,24 @@ export function MatchesView({ matches }: { matches: Match[] }) {
           matchSortKey(b.match_date, b.match_time),
         ),
       )
-  }, [matches, league, group, jornada, date, search])
+  }, [matches, league, jornada, date, search])
 
   const groups = useMemo(() => {
     const map = new Map<string, Match[]>()
     for (const m of filtered) {
-      const leagueKey = normalizeLeagueName(m.league_name) ?? 'sin-liga'
       const competitionId = normalizeLeagueId(m.league_id) ?? 'sin-id'
       const jornadaKey = normalizeJornada(m.jornada)?.toString() ?? 'sin-jornada'
-      const key = `${m.match_date ?? 'sin-fecha'}|${competitionId}|${leagueKey}|${jornadaKey}`
+      const key = `${competitionId}|${jornadaKey}`
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(m)
     }
 
     return [...map.entries()].map(([key, list]) => {
-      const [dateKey, , leagueKey, jornadaKey] = key.split('|')
+      const [competitionId, jornadaKey] = key.split('|')
       return {
         key,
-        dateKey,
-        leagueLabel: leagueKey === 'sin-liga' ? 'Sin competición' : leagueKey,
+        leagueLabel: list[0] ? displayLeagueName(list[0]) : 'Sin competición',
+        competitionId,
         jornada: jornadaKey === 'sin-jornada' ? null : jornadaKey,
         list,
       }
@@ -175,18 +163,10 @@ export function MatchesView({ matches }: { matches: Match[] }) {
   const selectedLeagueLabel =
     league === 'all' ? 'Competiciones' : leagueLabels[league] ?? 'Competición'
 
-  const groupOptions = useMemo(
-    () => ['all', ...new Set(
-      matches.map((match) => getGroupName(displayLeagueName(match))).filter(Boolean) as string[],
-    )],
-    [matches],
-  )
-
-  const hasFilters = search || league !== 'all' || group !== 'all' || jornada !== null || date
+  const hasFilters = search || league !== 'all' || jornada !== null || date
   const clearAll = () => {
     setSearch('')
     setLeague('all')
-    setGroup('all')
     setJornada(null)
     setDate('')
   }
@@ -206,9 +186,6 @@ export function MatchesView({ matches }: { matches: Match[] }) {
             leagueLabels={leagueLabels}
             league={league}
             onLeagueChange={setLeague}
-            group={group}
-            onGroupChange={setGroup}
-            groupOptions={groupOptions}
             jornadas={jornadas}
             jornada={jornada}
             onJornadaChange={setJornada}
@@ -264,18 +241,11 @@ export function MatchesView({ matches }: { matches: Match[] }) {
             </div>
           ) : (
             <div className="mt-6 space-y-8">
-              {groups.map(({ key, dateKey, leagueLabel, jornada, list }) => (
+              {groups.map(({ key, leagueLabel, jornada, list }) => (
                 <section key={key}>
                   <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <h3 className="font-display text-base font-bold text-foreground">
-                      {formatLongDate(dateKey === 'sin-fecha' ? null : dateKey)}
-                    </h3>
+                    <h3 className="font-display text-base font-bold text-foreground">{jornada ? `Jornada ${jornada}` : 'Jornada sin número'}</h3>
                     <span className="text-sm text-muted-foreground">{leagueLabel}</span>
-                    {jornada ? (
-                      <span className="text-sm text-muted-foreground">
-                        · Jornada {jornada}
-                      </span>
-                    ) : null}
                   </div>
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     {list.map((m) => (
