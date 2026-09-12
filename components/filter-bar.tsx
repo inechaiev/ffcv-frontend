@@ -8,6 +8,7 @@ type JornadaOption = { value: number; date: string | null }
 
 type FilterBarProps = {
   leagues: (number | string)[]
+  leagueLabels: Record<string, string>
   league: string
   onLeagueChange: (v: string) => void
   group: string
@@ -48,6 +49,7 @@ const selectClass =
 
 export function FilterBar({
   leagues,
+  leagueLabels,
   league,
   onLeagueChange,
   group,
@@ -75,12 +77,9 @@ export function FilterBar({
             <option value="all">Todas las competiciones</option>
             {leagues.map((l) => {
               const value = String(l)
-              const label = Number.isFinite(Number(value))
-                ? `Tercera Federación · Grup VI · Liga ${value}`
-                : value
               return (
                 <option key={value} value={value}>
-                  {label}
+                  {leagueLabels[value] ?? value}
                 </option>
               )
             })}

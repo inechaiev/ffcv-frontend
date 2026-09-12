@@ -20,6 +20,32 @@ function normalizeLeague(value: unknown): string | null {
   return normalized ? normalized : null
 }
 
+const competitionInfo: Record<string, { name: string; group: string }> = {
+  // These are the five competitions currently present in the Supabase data.
+  '905431519': { name: 'Fútbol Femenino FFCV', group: 'Grupo VI' },
+  '905431547': { name: 'Liga FFCV', group: 'Grupo VI' },
+  '905431548': { name: 'Liga FFCV', group: 'Grupo VI' },
+  '905431605': { name: 'Tercera Federación', group: 'Grupo VI' },
+  '905431607': { name: 'Liga FFCV', group: 'Grupo VI' },
+}
+
+function getCompetitionInfo(value: string | number | null) {
+  const normalized = normalizeLeague(value)
+  return (
+    (normalized && competitionInfo[normalized]) ?? {
+      name: 'Competición FFCV',
+      group: 'Grupo VI',
+    }
+  )
+}
+
+function formatLeagueLabel(value: string | number | null): string {
+  const normalized = normalizeLeague(value)
+  if (!normalized) return 'Sin competición'
+  const info = getCompetitionInfo(normalized)
+  return `${info.name} · ${info.group}`
+}
+
 export function MatchesView({ matches }: { matches: Match[] }) {
   const [search, setSearch] = useState('')
   const [league, setLeague] = useState('all')
@@ -76,14 +102,38 @@ export function MatchesView({ matches }: { matches: Match[] }) {
   const groups = useMemo(() => {
     const map = new Map<string, Match[]>()
     for (const m of filtered) {
-      const key = m.match_date ?? 'sin-fecha'
+      const leagueKey = normalizeLeague(m.league_id) ?? 'sin-liga'
+      const key = `${m.match_date ?? 'sin-fecha'}|${leagueKey}`
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(m)
     }
-    return [...map.entries()]
+
+    return [...map.entries()].map(([key, list]) => {
+      const [dateKey, leagueKey] = key.split('|')
+      return {
+        key,
+        dateKey,
+        leagueLabel:
+          leagueKey && leagueKey !== 'sin-liga'
+            ? formatLeagueLabel(leagueKey)
+            : 'Sin competición',
+        list,
+      }
+    })
   }, [filtered])
 
-  const groupOptions = useMemo(() => ['all', 'GRUP VI'], [])
+  const selectedLeagueLabel =
+    league === 'all' ? 'Tercera Federación · Grup VI' : formatLeagueLabel(league)
+
+  const leagueLabels = useMemo(
+    () => Object.fromEntries(leagues.map((value) => [value, formatLeagueLabel(value)])),
+    [leagues],
+  )
+
+  const groupOptions = useMemo(
+    () => ['all', ...new Set(leagues.map((value) => getCompetitionInfo(value).group))],
+    [leagues],
+  )
 
   const hasFilters = search || league !== 'all' || group !== 'all' || jornada !== null || date
   const clearAll = () => {
@@ -97,7 +147,7 @@ export function MatchesView({ matches }: { matches: Match[] }) {
   return (
     <>
       <SiteHeader
-        title="Tercera Federación · Grup VI"
+        title={selectedLeagueLabel}
         search={search}
         onSearchChange={setSearch}
       />
@@ -106,6 +156,7 @@ export function MatchesView({ matches }: { matches: Match[] }) {
         <div className="rounded-2xl border border-border bg-card p-4 shadow-xl shadow-navy/5 md:p-6">
           <FilterBar
             leagues={leagues}
+            leagueLabels={leagueLabels}
             league={league}
             onLeagueChange={setLeague}
             group={group}
@@ -119,7 +170,7 @@ export function MatchesView({ matches }: { matches: Match[] }) {
           <div className="mt-6 flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="inline-block font-display text-lg font-extrabold uppercase tracking-tight text-foreground">
-                Tercera Federación · Grup VI
+                {selectedLeagueLabel}
               </h2>
               <div className="mt-1 h-0.5 w-24 rounded-full bg-orange" />
               <p className="mt-2 text-sm text-muted-foreground">
@@ -166,15 +217,16 @@ export function MatchesView({ matches }: { matches: Match[] }) {
             </div>
           ) : (
             <div className="mt-6 space-y-8">
-              {groups.map(([key, list]) => (
+              {groups.map(({ key, dateKey, leagueLabel, list }) => (
                 <section key={key}>
                   <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                     <h3 className="font-display text-base font-bold text-foreground">
-                      {formatLongDate(key === 'sin-fecha' ? null : key)}
+                      {formatLongDate(dateKey === 'sin-fecha' ? null : dateKey)}
                     </h3>
+                    <span className="text-sm text-muted-foreground">{leagueLabel}</span>
                     {list[0]?.jornada != null ? (
                       <span className="text-sm text-muted-foreground">
-                        Jornada {list[0].jornada}
+                        · Jornada {list[0].jornada}
                       </span>
                     ) : null}
                   </div>
