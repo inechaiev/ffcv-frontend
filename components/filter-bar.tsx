@@ -13,7 +13,7 @@ type FilterBarProps = {
   onLeagueChange: (v: string) => void
   jornadas: JornadaOption[]
   jornada: number | null
-  onJornadaChange: (v: number | null) => void
+  onJornadaChange: (v: number) => void
 }
 
 function Field({
@@ -95,12 +95,6 @@ export function FilterBar({
           ref={stripRef}
           className="flex flex-1 gap-2 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          <JornadaPill
-            label="Todas"
-            sub="las jornadas"
-            active={jornada === null}
-            onClick={() => onJornadaChange(null)}
-          />
           {jornadas.map((j) => (
             <JornadaPill
               key={j.value}

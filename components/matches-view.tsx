@@ -1,11 +1,11 @@
 'use client'
 
-import { CalendarDays, CalendarX2, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { CalendarX2, X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { FilterBar } from '@/components/filter-bar'
 import { MatchCard } from '@/components/match-card'
 import { SiteHeader } from '@/components/site-header'
-import { matchSortKey } from '@/lib/format'
+import { formatLongDate, matchSortKey } from '@/lib/format'
 import type { Match } from '@/lib/types'
 
 function normalizeJornada(value: unknown): number | null {
@@ -20,81 +20,19 @@ function normalizeLeagueName(value: unknown): string | null {
   return normalized ? normalized : null
 }
 
-function normalizeLeagueId(value: unknown): string | null {
-  if (value === null || value === undefined || value === '') return null
-  const normalized = String(value).trim()
-  return normalized || null
-}
-
-function competitionKey(match: Match): string {
-  return normalizeLeagueId(match.league_id) ?? `name:${normalizeLeagueName(match.league_name) ?? 'sin-nombre'}`
-}
-
-const fallbackLeagueNames: Record<string, string> = {
-  '905431519': 'Tercera Federación de Fútbol Femenino - Grupo VI',
-  '905431547': 'Lliga Comunitat Juvenil - Nord',
-  '905431548': 'Lliga Comunitat Juvenil - Sud',
-  '905431605': 'Tercera Federación (GRUP - VI)',
-  '905431607': 'Primera FFCV - Grup - 1',
-  '905431608': 'Primera FFCV - Grup - 2',
-  '905431609': 'Primera FFCV - Grup - 3',
-  '905431612': 'Segona FFCV - Grup - 1',
-  '905431613': 'Segona FFCV - Grup - 2',
-  '905431614': 'Segona FFCV - Grup - 3',
-  '905431615': 'Segona FFCV - Grup - 4',
-  '905431616': 'Segona FFCV - Grup - 6',
-  '905431619': 'Segona FFCV - Grup - 5',
-  '905431621': 'Tercera FFCV - Grup - 1',
-  '905431622': 'Tercera FFCV - Grup - 2',
-  '905431623': 'Tercera FFCV - Grup - 3',
-  '905431624': 'Tercera FFCV - Grup - 4',
-  '905431625': 'Tercera FFCV - Grup - 5',
-  '905431626': 'Tercera FFCV - Grup - 6',
-  '905431627': 'Tercera FFCV - Grup - 7',
-  '905431628': 'Tercera FFCV - Grup - 8',
-  '905431629': 'Tercera FFCV - Grup - 9',
-  '905431630': 'Tercera FFCV - Grup - 10',
-  '905431631': 'Tercera FFCV - Grup - 11',
-  '905431637': 'Segona FFCV Juvenil - Grup - 1',
-  '905431639': 'Segona FFCV Juvenil - Grup - 3',
-  '905431641': 'Segona FFCV Juvenil - Grup - 5',
-  '905431642': 'Segona FFCV Juvenil - Grup - 6',
-  '905431822': 'Lliga Comunitat - Grup Nord',
-  '905431823': 'Lliga Comunitat - Grup Sud',
-  '905431879': 'Liga Nacional Juvenil - Grup - VIII',
-  '905431881': 'Primera FFCV Juvenil - Grup - 1',
-  '905431883': 'Primera FFCV Juvenil - Grup - 3',
-}
-
-function displayLeagueName(match: Match): string {
-  const rawName = normalizeLeagueName(match.league_name)
-  const fallbackName = fallbackLeagueNames[normalizeLeagueId(match.league_id) ?? '']
-  return rawName ?? fallbackName ?? 'Competición sin nombre'
-}
-
 export function MatchesView({ matches }: { matches: Match[] }) {
   const [search, setSearch] = useState('')
-  const [league, setLeague] = useState('all')
+  const [league, setLeague] = useState('')
   const [jornada, setJornada] = useState<number | null>(null)
-  const [date, setDate] = useState('')
 
   const leagues = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const m of matches) {
-      const key = competitionKey(m)
-      if (!map.has(key)) {
-        map.set(key, displayLeagueName(m))
-      }
-    }
-    return [...map.keys()].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+    return [...new Set(matches.map((m) => normalizeLeagueName(m.league_name)).filter(Boolean) as string[])]
+      .sort((a, b) => a.localeCompare(b))
   }, [matches])
 
   const jornadas = useMemo(() => {
     const map = new Map<number, string | null>()
-    for (const m of matches.filter((match) => {
-      if (league !== 'all' && competitionKey(match) !== league) return false
-      return true
-    })) {
+    for (const m of matches.filter((match) => normalizeLeagueName(match.league_name) === league)) {
       const normalized = normalizeJornada(m.jornada)
       if (normalized == null) continue
       if (!map.has(normalized)) map.set(normalized, m.match_date)
@@ -104,13 +42,28 @@ export function MatchesView({ matches }: { matches: Match[] }) {
       .sort((a, b) => a.value - b.value)
   }, [matches, league])
 
+  useEffect(() => {
+    if (!leagues.length) return
+    const preferred = leagues.find((name) =>
+      name.toLocaleLowerCase().includes('tercera federación') &&
+      name.toLocaleLowerCase().includes('grup vi'),
+    )
+    const nextLeague = league && leagues.includes(league) ? league : preferred ?? leagues[0]
+    if (nextLeague !== league) setLeague(nextLeague)
+  }, [leagues, league])
+
+  useEffect(() => {
+    if (jornadas.length && !jornadas.some((item) => item.value === jornada)) {
+      setJornada(jornadas[0].value)
+    }
+  }, [jornadas, jornada])
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return matches
       .filter((m) => {
-        if (league !== 'all' && competitionKey(m) !== league) return false
-        if (jornada !== null && normalizeJornada(m.jornada) !== jornada) return false
-        if (date && m.match_date !== date) return false
+        if (normalizeLeagueName(m.league_name) !== league) return false
+        if (normalizeJornada(m.jornada) !== jornada) return false
         if (q) {
           const hay = `${m.home_team} ${m.away_team}`.toLowerCase()
           if (!hay.includes(q)) return false
@@ -122,53 +75,31 @@ export function MatchesView({ matches }: { matches: Match[] }) {
           matchSortKey(b.match_date, b.match_time),
         ),
       )
-  }, [matches, league, jornada, date, search])
+  }, [matches, league, jornada, search])
 
   const groups = useMemo(() => {
     const map = new Map<string, Match[]>()
     for (const m of filtered) {
-      const competitionId = normalizeLeagueId(m.league_id) ?? 'sin-id'
-      const jornadaKey = normalizeJornada(m.jornada)?.toString() ?? 'sin-jornada'
-      const key = `${competitionId}|${jornadaKey}`
+      const key = m.match_date ?? 'sin-fecha'
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(m)
     }
 
     return [...map.entries()].map(([key, list]) => {
-      const [competitionId, jornadaKey] = key.split('|')
       return {
         key,
-        leagueLabel: list[0] ? displayLeagueName(list[0]) : 'Sin competición',
-        competitionId,
-        jornada: jornadaKey === 'sin-jornada' ? null : jornadaKey,
+        dateKey: key,
         list,
       }
     })
   }, [filtered])
 
-  const leagueLabels = useMemo(
-    () => Object.fromEntries(
-      leagues.map((value) => {
-        const match = matches.find((item) => competitionKey(item) === value)
-        const name = match ? displayLeagueName(match) : 'Competición sin nombre'
-        const sameName = matches.some(
-          (item) => displayLeagueName(item) === name && competitionKey(item) !== value,
-        )
-        return [value, sameName && match?.league_id ? `${name} · Grupo ${match.league_id}` : name]
-      }),
-    ),
-    [leagues, matches],
-  )
+  const leagueLabels = Object.fromEntries(leagues.map((value) => [value, value]))
+  const selectedLeagueLabel = league || 'Competiciones'
 
-  const selectedLeagueLabel =
-    league === 'all' ? 'Competiciones' : leagueLabels[league] ?? 'Competición'
-
-  const hasFilters = search || league !== 'all' || jornada !== null || date
+  const hasFilters = search
   const clearAll = () => {
     setSearch('')
-    setLeague('all')
-    setJornada(null)
-    setDate('')
   }
 
   return (
@@ -203,19 +134,6 @@ export function MatchesView({ matches }: { matches: Match[] }) {
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="relative flex items-center">
-                <CalendarDays
-                  className="pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground"
-                  aria-hidden="true"
-                />
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  aria-label="Filtrar por fecha"
-                  className="h-11 rounded-lg border border-input bg-card pl-9 pr-3 text-sm font-medium text-foreground outline-none transition focus:ring-2 focus:ring-orange"
-                />
-              </label>
               {hasFilters ? (
                 <button
                   type="button"
@@ -241,11 +159,12 @@ export function MatchesView({ matches }: { matches: Match[] }) {
             </div>
           ) : (
             <div className="mt-6 space-y-8">
-              {groups.map(({ key, leagueLabel, jornada, list }) => (
+              {groups.map(({ key, dateKey, list }) => (
                 <section key={key}>
                   <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <h3 className="font-display text-base font-bold text-foreground">{jornada ? `Jornada ${jornada}` : 'Jornada sin número'}</h3>
-                    <span className="text-sm text-muted-foreground">{leagueLabel}</span>
+                    <h3 className="font-display text-base font-bold text-foreground">
+                      {formatLongDate(dateKey === 'sin-fecha' ? null : dateKey)}
+                    </h3>
                   </div>
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                     {list.map((m) => (
