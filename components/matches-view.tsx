@@ -88,17 +88,19 @@ export function MatchesView({ matches }: { matches: Match[] }) {
     const map = new Map<string, Match[]>()
     for (const m of filtered) {
       const leagueKey = normalizeLeagueName(m.league_name) ?? 'sin-liga'
-      const key = `${m.match_date ?? 'sin-fecha'}|${leagueKey}`
+      const jornadaKey = normalizeJornada(m.jornada)?.toString() ?? 'sin-jornada'
+      const key = `${m.match_date ?? 'sin-fecha'}|${leagueKey}|${jornadaKey}`
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(m)
     }
 
     return [...map.entries()].map(([key, list]) => {
-      const [dateKey, leagueKey] = key.split('|')
+      const [dateKey, leagueKey, jornadaKey] = key.split('|')
       return {
         key,
         dateKey,
         leagueLabel: leagueKey === 'sin-liga' ? 'Sin competición' : leagueKey,
+        jornada: jornadaKey === 'sin-jornada' ? null : jornadaKey,
         list,
       }
     })
@@ -199,16 +201,16 @@ export function MatchesView({ matches }: { matches: Match[] }) {
             </div>
           ) : (
             <div className="mt-6 space-y-8">
-              {groups.map(({ key, dateKey, leagueLabel, list }) => (
+              {groups.map(({ key, dateKey, leagueLabel, jornada, list }) => (
                 <section key={key}>
                   <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                     <h3 className="font-display text-base font-bold text-foreground">
                       {formatLongDate(dateKey === 'sin-fecha' ? null : dateKey)}
                     </h3>
                     <span className="text-sm text-muted-foreground">{leagueLabel}</span>
-                    {list[0]?.jornada != null ? (
+                    {jornada ? (
                       <span className="text-sm text-muted-foreground">
-                        · Jornada {list[0].jornada}
+                        · Jornada {jornada}
                       </span>
                     ) : null}
                   </div>

@@ -1,10 +1,23 @@
 const CAP = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-/** "2026-09-12" -> "Sábado 12 de Septiembre de 2026" */
+function parseDate(date: string): Date | null {
+  const isoMatch = date.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  const europeanMatch = date.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  const parts = isoMatch
+    ? [Number(isoMatch[1]), Number(isoMatch[2]), Number(isoMatch[3])]
+    : europeanMatch
+      ? [Number(europeanMatch[3]), Number(europeanMatch[2]), Number(europeanMatch[1])]
+      : null
+  if (!parts) return null
+  const parsed = new Date(parts[0], parts[1] - 1, parts[2])
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+/** Supports both "2026-09-12" and "12/09/2026". */
 export function formatLongDate(date: string | null): string {
   if (!date) return 'Fecha por confirmar'
-  const d = new Date(`${date}T00:00:00`)
-  if (Number.isNaN(d.getTime())) return date
+  const d = parseDate(date)
+  if (!d) return date
   const formatted = new Intl.DateTimeFormat('es-ES', {
     weekday: 'long',
     day: 'numeric',
@@ -14,11 +27,11 @@ export function formatLongDate(date: string | null): string {
   return formatted.replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-/** "2026-09-12" -> "12 sept" */
+/** Supports both "2026-09-12" and "12/09/2026". */
 export function formatShortDate(date: string | null): string {
   if (!date) return '—'
-  const d = new Date(`${date}T00:00:00`)
-  if (Number.isNaN(d.getTime())) return date
+  const d = parseDate(date)
+  if (!d) return date
   return CAP(
     new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(d),
   )
@@ -34,5 +47,12 @@ export function formatTime(time: string | null): string {
 
 /** Stable sort key from date + time. */
 export function matchSortKey(date: string | null, time: string | null): string {
-  return `${date ?? '9999-99-99'}T${formatTime(time)}`
+  if (!date) return `9999-99-99T${formatTime(time)}`
+  const parsed = parseDate(date)
+  const normalized = parsed
+    ? `${parsed.getFullYear().toString().padStart(4, '0')}-${(parsed.getMonth() + 1)
+        .toString()
+        .padStart(2, '0')}-${parsed.getDate().toString().padStart(2, '0')}`
+    : date
+  return `${normalized}T${formatTime(time)}`
 }
