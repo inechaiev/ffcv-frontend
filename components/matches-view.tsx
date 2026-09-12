@@ -41,6 +41,14 @@ export function MatchesView({ matches }: { matches: Match[] }) {
   const [league, setLeague] = useState('')
   const [jornada, setJornada] = useState<number | null>(null)
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const urlLeague = params.get('league')
+    const urlJornada = normalizeJornada(params.get('jornada'))
+    if (urlLeague) setLeague(urlLeague)
+    if (urlJornada !== null) setJornada(urlJornada)
+  }, [])
+
   const leagues = useMemo(() => {
     return [...new Set(matches.map((m) => normalizeLeagueId(m.league_id)).filter(Boolean) as string[])]
       .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
@@ -84,6 +92,14 @@ export function MatchesView({ matches }: { matches: Match[] }) {
       setJornada(jornadas[0].value)
     }
   }, [jornadas, jornada])
+
+  useEffect(() => {
+    if (!league || jornada === null) return
+    const url = new URL(window.location.href)
+    url.searchParams.set('league', league)
+    url.searchParams.set('jornada', String(jornada))
+    window.history.replaceState(null, '', `${url.pathname}?${url.searchParams.toString()}`)
+  }, [league, jornada])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
