@@ -26,13 +26,52 @@ function normalizeLeagueId(value: unknown): string | null {
   return normalized || null
 }
 
-const fallbackLeagueNames: Record<string, string> = {
-  '905431605': 'Tercera Federación (GRUP - VI)',
+const competitionLabels: Record<string, string> = {
+  '905431519': 'Tercera Federación de Fútbol Femenino - Grupo VI',
+  '905431547': 'Lliga Comunitat Juvenil - Nord',
+  '905431548': 'Lliga Comunitat Juvenil - Sud',
+  '905431605': 'Tercera Federación - Grup VI',
+  '905431607': 'Primera FFCV - Grup 1',
+  '905431608': 'Primera FFCV - Grup 2',
+  '905431609': 'Primera FFCV - Grup 3',
+  '905431612': 'Segona FFCV - Grup 1',
+  '905431613': 'Segona FFCV - Grup 2',
+  '905431614': 'Segona FFCV - Grup 3',
+  '905431615': 'Segona FFCV - Grup 4',
+  '905431616': 'Segona FFCV - Grup 6',
+  '905431619': 'Segona FFCV - Grup 5',
+  '905431621': 'Tercera FFCV - Grup 1',
+  '905431622': 'Tercera FFCV - Grup 2',
+  '905431623': 'Tercera FFCV - Grup 3',
+  '905431624': 'Tercera FFCV - Grup 4',
+  '905431625': 'Tercera FFCV - Grup 5',
+  '905431626': 'Tercera FFCV - Grup 6',
+  '905431627': 'Tercera FFCV - Grup 7',
+  '905431628': 'Tercera FFCV - Grup 8',
+  '905431629': 'Tercera FFCV - Grup 9',
+  '905431630': 'Tercera FFCV - Grup 10',
+  '905431631': 'Tercera FFCV - Grup 11',
+  '905431637': 'Segona FFCV Juvenil - Grup 1',
+  '905431638': 'Segona FFCV Juvenil - Grup 2',
+  '905431639': 'Segona FFCV Juvenil - Grup 3',
+  '905431640': 'Segona FFCV Juvenil - Grup 4',
+  '905431641': 'Segona FFCV Juvenil - Grup 5',
+  '905431642': 'Segona FFCV Juvenil - Grup 6',
+  '905431822': 'Lliga Comunitat - Grup Nord',
+  '905431823': 'Lliga Comunitat - Grup Sud',
+  '905431877': 'Lliga Autonòmica Valenta - Grup Únic',
+  '905431879': 'Liga Nacional Juvenil - Grup VIII',
+  '905431881': 'Primera FFCV Juvenil - Grup 1',
+  '905431882': 'Primera FFCV Juvenil - Grup 2',
+  '905431883': 'Primera FFCV Juvenil - Grup 3',
+  '905431926': '1ª Regional Valenta - Grup 1',
+  '905431927': '1ª Regional Valenta - Grup 2',
+  '905432483': 'VI La Nostra Copa',
 }
 
 function displayLeagueName(match: Match): string {
-  return normalizeLeagueName(match.league_name)
-    ?? fallbackLeagueNames[normalizeLeagueId(match.league_id) ?? '']
+  return competitionLabels[normalizeLeagueId(match.league_id) ?? '']
+    ?? normalizeLeagueName(match.league_name)
     ?? `Liga ${normalizeLeagueId(match.league_id) ?? 'sin nombre'}`
 }
 
