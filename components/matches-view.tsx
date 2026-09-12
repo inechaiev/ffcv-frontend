@@ -70,7 +70,7 @@ export function MatchesView({ matches }: { matches: Match[] }) {
 
   useEffect(() => {
     if (!leagues.length) return
-    const preferred = leagues.find((id) => {
+    const preferred = leagues.find((id) => id === '905431605') ?? leagues.find((id) => {
       const label = leagueLabels[id] ?? ''
       return label.toLocaleLowerCase().includes('tercera federación') &&
         label.toLocaleLowerCase().includes('grup vi')
