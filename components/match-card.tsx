@@ -2,18 +2,18 @@ import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { TeamCrest } from '@/components/team-crest'
 import { formatTime } from '@/lib/format'
-import { isFinished, type Match } from '@/lib/types'
+import { hasScore, isFinished, type Match } from '@/lib/types'
 
-function TeamRow({ name, score, finished }: { name: string; score: number | null; finished: boolean }) {
+function TeamRow({ name, score, showScore }: { name: string; score: Match['home_score']; showScore: boolean }) {
   return (
     <div className="flex items-center gap-3">
       <TeamCrest name={name} />
       <span className="min-w-0 flex-1 truncate font-display text-sm font-semibold text-foreground">
         {name}
       </span>
-      {finished ? (
+      {showScore ? (
         <span className="font-display text-xl font-extrabold text-score tabular-nums">
-          {score ?? 0}
+          {score}
         </span>
       ) : null}
     </div>
@@ -22,14 +22,15 @@ function TeamRow({ name, score, finished }: { name: string; score: number | null
 
 export function MatchCard({ match }: { match: Match }) {
   const finished = isFinished(match)
+  const showScore = finished || (hasScore(match.home_score) && hasScore(match.away_score))
   return (
     <Link
       href={`/match/${match.match_id}`}
       className="group flex items-stretch overflow-hidden rounded-xl border border-border bg-card shadow-sm transition hover:-translate-y-0.5 hover:border-orange/50 hover:shadow-md"
     >
       <div className="flex flex-1 flex-col justify-center gap-3 p-4">
-        <TeamRow name={match.home_team} score={match.home_score} finished={finished} />
-        <TeamRow name={match.away_team} score={match.away_score} finished={finished} />
+        <TeamRow name={match.home_team} score={match.home_score} showScore={showScore} />
+        <TeamRow name={match.away_team} score={match.away_score} showScore={showScore} />
       </div>
 
       <div className="flex w-28 shrink-0 flex-col items-center justify-center gap-1.5 border-l border-border bg-secondary/50 px-2">

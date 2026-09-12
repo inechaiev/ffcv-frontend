@@ -9,7 +9,7 @@ export default async function Page() {
   const { data, error } = await supabase
     .from('matches')
     .select(
-      'match_id, league_id, jornada, home_team, away_team, match_date, match_time, location, status, home_score, away_score',
+      'match_id, league_id, league_name, jornada, home_team, away_team, match_date, match_time, location, status, home_score, away_score',
     )
     .order('match_date', { ascending: true })
     .order('match_time', { ascending: true })

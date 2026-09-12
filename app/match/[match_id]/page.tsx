@@ -7,7 +7,7 @@ import type { Match } from '@/lib/types'
 export const revalidate = 60
 
 const SELECT =
-  'match_id, league_id, jornada, home_team, away_team, match_date, match_time, location, status, home_score, away_score'
+  'match_id, league_id, league_name, jornada, home_team, away_team, match_date, match_time, location, status, home_score, away_score'
 
 async function getMatch(matchId: string): Promise<Match | null> {
   const supabase = createClient()
@@ -34,7 +34,7 @@ export async function generateMetadata({
   if (!match) return { title: 'Partido no encontrado' }
   const title = `${match.home_team} vs ${match.away_team}`
   return {
-    title: `${title} | Tercera Federación`,
+    title,
     description: `Detalles del partido ${title}${match.location ? ` en ${match.location}` : ''}.`,
   }
 }

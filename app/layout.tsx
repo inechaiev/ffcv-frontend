@@ -17,9 +17,9 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: 'Calendario de Partidos | Tercera Federación',
+  title: 'Calendario de Partidos',
   description:
-    'Consulta el calendario de partidos, resultados en directo, horarios y detalles de cada encuentro por jornada, liga y equipo.',
+    'Consulta el calendario de partidos, resultados, horarios y detalles de cada encuentro por jornada y competición.',
   generator: 'v0.app',
 }
 

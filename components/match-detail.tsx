@@ -130,11 +130,11 @@ export function MatchDetail({ match }: { match: Match }) {
             {match.jornada != null ? (
               <DetailRow icon={Hash} label="Jornada" value={String(match.jornada)} />
             ) : null}
-            {match.league_id != null ? (
+            {match.league_name ? (
               <DetailRow
                 icon={Trophy}
                 label="Competición"
-                value={`Liga ${match.league_id}`}
+                value={match.league_name}
               />
             ) : null}
           </div>
