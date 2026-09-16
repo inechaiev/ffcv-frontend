@@ -28,8 +28,6 @@ function normalizeLeagueId(value: unknown): string | null {
 
 const competitionLabels: Record<string, string> = {
   '905431519': 'Tercera Federación de Fútbol Femenino - Grupo VI',
-  '905431547': 'Lliga Comunitat Juvenil - Nord',
-  '905431548': 'Lliga Comunitat Juvenil - Sud',
   '905431605': 'Tercera Federación - Grup VI',
   '905431607': 'Primera FFCV - Grup 1',
   '905431608': 'Primera FFCV - Grup 2',
@@ -51,22 +49,16 @@ const competitionLabels: Record<string, string> = {
   '905431629': 'Tercera FFCV - Grup 9',
   '905431630': 'Tercera FFCV - Grup 10',
   '905431631': 'Tercera FFCV - Grup 11',
-  '905431637': 'Segona FFCV Juvenil - Grup 1',
-  '905431638': 'Segona FFCV Juvenil - Grup 2',
-  '905431639': 'Segona FFCV Juvenil - Grup 3',
-  '905431640': 'Segona FFCV Juvenil - Grup 4',
-  '905431641': 'Segona FFCV Juvenil - Grup 5',
-  '905431642': 'Segona FFCV Juvenil - Grup 6',
   '905431822': 'Lliga Comunitat - Grup Nord',
   '905431823': 'Lliga Comunitat - Grup Sud',
   '905431877': 'Lliga Autonòmica Valenta - Grup Únic',
-  '905431879': 'Liga Nacional Juvenil - Grup VIII',
-  '905431881': 'Primera FFCV Juvenil - Grup 1',
-  '905431882': 'Primera FFCV Juvenil - Grup 2',
-  '905431883': 'Primera FFCV Juvenil - Grup 3',
   '905431926': '1ª Regional Valenta - Grup 1',
   '905431927': '1ª Regional Valenta - Grup 2',
   '905432483': 'VI La Nostra Copa',
+}
+
+function isJuvenilLeague(value: string | null | undefined): boolean {
+  return Boolean(value && value.toLowerCase().includes('juvenil'))
 }
 
 function displayLeagueName(match: Match): string {
@@ -76,6 +68,15 @@ function displayLeagueName(match: Match): string {
 }
 
 export function MatchesView({ matches }: { matches: Match[] }) {
+  const visibleMatches = useMemo(
+    () => matches.filter((match) => {
+      const leagueName = normalizeLeagueName(match.league_name)
+      const displayName = displayLeagueName(match)
+      return !isJuvenilLeague(leagueName) && !isJuvenilLeague(displayName)
+    }),
+    [matches],
+  )
+
   const [search, setSearch] = useState('')
   const [league, setLeague] = useState('')
   const [jornada, setJornada] = useState<number | null>(null)
@@ -89,23 +90,27 @@ export function MatchesView({ matches }: { matches: Match[] }) {
   }, [])
 
   const leagues = useMemo(() => {
-    return [...new Set(matches.map((m) => normalizeLeagueId(m.league_id)).filter(Boolean) as string[])]
+    return [...new Set(visibleMatches.map((m) => normalizeLeagueId(m.league_id)).filter(Boolean) as string[])]
+      .filter((id) => {
+        const label = displayLeagueName(visibleMatches.find((match) => normalizeLeagueId(match.league_id) === id) ?? { league_id: id, league_name: null } as Match)
+        return !isJuvenilLeague(label)
+      })
       .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
-  }, [matches])
+  }, [visibleMatches])
 
   const leagueLabels = useMemo(
     () => Object.fromEntries(
       leagues.map((value) => {
-        const firstMatch = matches.find((match) => normalizeLeagueId(match.league_id) === value)
+        const firstMatch = visibleMatches.find((match) => normalizeLeagueId(match.league_id) === value)
         return [value, displayLeagueName(firstMatch ?? { league_id: value, league_name: null } as Match)]
       }),
     ),
-    [leagues, matches],
+    [leagues, visibleMatches],
   )
 
   const jornadas = useMemo(() => {
     const map = new Map<number, string | null>()
-    for (const m of matches.filter((match) => normalizeLeagueId(match.league_id) === league)) {
+    for (const m of visibleMatches.filter((match) => normalizeLeagueId(match.league_id) === league)) {
       const normalized = normalizeJornada(m.jornada)
       if (normalized == null) continue
       if (!map.has(normalized)) map.set(normalized, m.match_date)
@@ -113,7 +118,7 @@ export function MatchesView({ matches }: { matches: Match[] }) {
     return [...map.entries()]
       .map(([value, d]) => ({ value, date: d }))
       .sort((a, b) => a.value - b.value)
-  }, [matches, league])
+  }, [visibleMatches, league])
 
   useEffect(() => {
     if (!leagues.length) return
@@ -125,6 +130,12 @@ export function MatchesView({ matches }: { matches: Match[] }) {
     const nextLeague = league && leagues.includes(league) ? league : preferred ?? leagues[0]
     if (nextLeague !== league) setLeague(nextLeague)
   }, [leagues, league, leagueLabels])
+
+  useEffect(() => {
+    if (league && !leagues.includes(league)) {
+      setLeague(leagues[0] ?? '')
+    }
+  }, [league, leagues])
 
   useEffect(() => {
     if (jornadas.length && !jornadas.some((item) => item.value === jornada)) {
@@ -142,7 +153,7 @@ export function MatchesView({ matches }: { matches: Match[] }) {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return matches
+    return visibleMatches
       .filter((m) => {
         if (normalizeLeagueId(m.league_id) !== league) return false
         if (normalizeJornada(m.jornada) !== jornada) return false
@@ -157,7 +168,7 @@ export function MatchesView({ matches }: { matches: Match[] }) {
           matchSortKey(b.match_date, b.match_time),
         ),
       )
-  }, [matches, league, jornada, search])
+  }, [visibleMatches, league, jornada, search])
 
   const groups = useMemo(() => {
     const map = new Map<string, Match[]>()

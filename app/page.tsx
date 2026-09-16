@@ -7,6 +7,10 @@ export const revalidate = 60
 const MATCH_SELECT =
   'match_id, league_id, league_name, jornada, home_team, away_team, match_date, match_time, location, status, home_score, away_score'
 
+function isJuvenilLeague(value: string | null | undefined): boolean {
+  return Boolean(value && value.toLowerCase().includes('juvenil'))
+}
+
 async function getAllMatches(): Promise<Match[]> {
   const supabase = createClient()
   const pageSize = 1000
@@ -28,7 +32,7 @@ async function getAllMatches(): Promise<Match[]> {
     if (!data || data.length < pageSize) break
   }
 
-  return allMatches
+  return allMatches.filter((match) => !isJuvenilLeague(match.league_name))
 }
 
 export default async function Page() {
