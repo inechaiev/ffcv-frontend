@@ -31,7 +31,15 @@ function formatDateLabel(value: string | null): string {
   }).format(date)
 }
 
-export function MatchCard({ match }: { match: Match }) {
+export function MatchCard({
+  match,
+  showCompetition = false,
+  competitionLabel,
+}: {
+  match: Match
+  showCompetition?: boolean
+  competitionLabel?: string
+}) {
   const finished = isFinished(match)
   const showScore = finished || (hasScore(match.home_score) && hasScore(match.away_score))
   const mapsUrl = match.location
@@ -49,6 +57,13 @@ export function MatchCard({ match }: { match: Match }) {
             <span>{formatLongDate(match.match_date ?? null).replace(/^\w/, (c) => c.toUpperCase())}</span>
             <span className="text-orange">{formatTime(match.match_time)}</span>
           </div>
+
+          {showCompetition ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-muted-foreground">
+              <span className="truncate">{competitionLabel ?? match.league_name ?? 'Competición'}</span>
+              {match.jornada != null ? <span className="shrink-0 text-orange">Jornada {match.jornada}</span> : null}
+            </div>
+          ) : null}
 
           <TeamRow name={match.home_team} score={match.home_score} showScore={showScore} />
           <TeamRow name={match.away_team} score={match.away_score} showScore={showScore} />

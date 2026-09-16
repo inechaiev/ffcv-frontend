@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { FilterBar } from '@/components/filter-bar'
 import { MatchCard } from '@/components/match-card'
 import { SiteHeader } from '@/components/site-header'
+import { SiteFooter } from '@/components/site-footer'
 import { formatLongDate, matchSortKey } from '@/lib/format'
 import type { Match } from '@/lib/types'
 
@@ -137,7 +138,7 @@ export function MatchesView({ matches, initialView }: { matches: Match[]; initia
     init.setDate(1)
     return init
   })
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string>(() => toISODate(new Date()))
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -278,17 +279,20 @@ export function MatchesView({ matches, initialView }: { matches: Match[]; initia
 
   useEffect(() => {
     const currentMonthMatchDates = [...monthMatchDates].sort()
-    if (!currentMonthMatchDates.length) {
-      setSelectedDate(null)
-      return
-    }
-
-    const monthHasSelectedDate = selectedDate ? monthMatchDates.has(selectedDate) : false
+    const today = new Date()
+    const isCurrentMonth = calendarMonth.getFullYear() === today.getFullYear() &&
+      calendarMonth.getMonth() === today.getMonth()
+    const todayKey = toISODate(today)
     setSelectedDate((current) => {
-      if (current && monthHasSelectedDate) return current
-      return currentMonthMatchDates[0]
+      const currentDate = parseDateInput(current)
+      const currentIsInMonth = currentDate &&
+        currentDate.getFullYear() === calendarMonth.getFullYear() &&
+        currentDate.getMonth() === calendarMonth.getMonth()
+      if (currentIsInMonth) return current
+      if (isCurrentMonth) return todayKey
+      return currentMonthMatchDates[0] ?? toISODate(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1))
     })
-  }, [calendarMonth, monthMatchDates, selectedDate])
+  }, [calendarMonth, monthMatchDates])
 
   const selectedDateMatches = useMemo(() => {
     if (!selectedDate) return []
@@ -486,7 +490,12 @@ export function MatchesView({ matches, initialView }: { matches: Match[]; initia
                   {selectedDateMatches.length ? (
                     <div className="space-y-3">
                       {selectedDateMatches.map((match) => (
-                        <MatchCard key={match.match_id} match={match} />
+                        <MatchCard
+                          key={match.match_id}
+                          match={match}
+                          showCompetition
+                          competitionLabel={displayLeagueName(match)}
+                        />
                       ))}
                     </div>
                   ) : (
@@ -502,6 +511,7 @@ export function MatchesView({ matches, initialView }: { matches: Match[]; initia
             </>
           )}
         </div>
+        <SiteFooter />
       </main>
     </>
   )

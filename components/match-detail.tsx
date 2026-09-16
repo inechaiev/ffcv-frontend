@@ -3,6 +3,7 @@ import { ArrowLeft, CalendarDays, Clock, MapPin, Trophy, Flag, Hash } from 'luci
 import type { ReactNode } from 'react'
 import { BrandLogo } from '@/components/brand-logo'
 import { SiteNav } from '@/components/site-nav'
+import { SiteFooter } from '@/components/site-footer'
 import { TeamCrest } from '@/components/team-crest'
 import { formatLongDate, formatShortDate, formatTime } from '@/lib/format'
 import { isFinished, type Match } from '@/lib/types'
@@ -170,6 +171,7 @@ export function MatchDetail({ match }: { match: Match }) {
           </div>
         </div>
       </main>
+      <SiteFooter />
     </>
   )
 }
