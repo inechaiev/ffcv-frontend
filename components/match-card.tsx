@@ -1,7 +1,7 @@
 import Link from 'next/link'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, MapPin } from 'lucide-react'
 import { TeamCrest } from '@/components/team-crest'
-import { formatTime } from '@/lib/format'
+import { formatLongDate, formatTime } from '@/lib/format'
 import { hasScore, isFinished, type Match } from '@/lib/types'
 
 function TeamRow({ name, score, showScore }: { name: string; score: Match['home_score']; showScore: boolean }) {
@@ -20,17 +20,39 @@ function TeamRow({ name, score, showScore }: { name: string; score: Match['home_
   )
 }
 
+function formatDateLabel(value: string | null): string {
+  if (!value) return 'Fecha por confirmar'
+  const date = new Date(value.includes('/') ? value.split('/').reverse().join('-') : value)
+  if (Number.isNaN(date.getTime())) return value
+
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'long',
+  }).format(date)
+}
+
 export function MatchCard({ match }: { match: Match }) {
   const finished = isFinished(match)
   const showScore = finished || (hasScore(match.home_score) && hasScore(match.away_score))
+
   return (
     <Link
       href={`/match/${match.match_id}`}
       className="group flex items-stretch overflow-hidden rounded-xl border border-border bg-card shadow-sm transition hover:-translate-y-0.5 hover:border-orange/50 hover:shadow-md"
     >
       <div className="flex flex-1 flex-col justify-center gap-3 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          <span>{formatLongDate(match.match_date ?? null).replace(/^\w/, (c) => c.toUpperCase())}</span>
+          <span className="text-orange">{formatTime(match.match_time)}</span>
+        </div>
+
         <TeamRow name={match.home_team} score={match.home_score} showScore={showScore} />
         <TeamRow name={match.away_team} score={match.away_score} showScore={showScore} />
+
+        <div className="mt-1 flex items-center gap-2 border-t border-border pt-2 text-xs text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5 text-orange" aria-hidden="true" />
+          <span className="truncate">{match.location ?? 'Lugar por confirmar'}</span>
+        </div>
       </div>
 
       <div className="flex w-28 shrink-0 flex-col items-center justify-center gap-1.5 border-l border-border bg-secondary/50 px-2">

@@ -1,12 +1,14 @@
 'use client'
 
-import { CalendarX2, X } from 'lucide-react'
+import { CalendarX2, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { FilterBar } from '@/components/filter-bar'
 import { MatchCard } from '@/components/match-card'
 import { SiteHeader } from '@/components/site-header'
 import { formatLongDate, matchSortKey } from '@/lib/format'
 import type { Match } from '@/lib/types'
+
+type ViewMode = 'schedule' | 'calendar'
 
 function normalizeJornada(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null
@@ -24,6 +26,45 @@ function normalizeLeagueId(value: unknown): string | null {
   if (value === null || value === undefined || value === '') return null
   const normalized = String(value).trim()
   return normalized || null
+}
+
+function parseDateInput(value: string | null): Date | null {
+  if (!value) return null
+  const normalized = value.trim()
+  if (!normalized) return null
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    const [year, month, day] = normalized.split('-').map(Number)
+    const parsed = new Date(year, month - 1, day)
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(normalized)) {
+    const [day, month, year] = normalized.split('/').map(Number)
+    const parsed = new Date(year, month - 1, day)
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+
+  const parsed = new Date(normalized)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+function toISODate(value: Date): string {
+  const year = value.getFullYear()
+  const month = String(value.getMonth() + 1).padStart(2, '0')
+  const day = String(value.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function monthKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
+function monthLabel(date: Date): string {
+  return new Intl.DateTimeFormat('es-ES', {
+    month: 'long',
+    year: 'numeric',
+  }).format(date).replace(/^(\w)/, (char) => char.toUpperCase())
 }
 
 const competitionLabels: Record<string, string> = {
@@ -80,6 +121,13 @@ export function MatchesView({ matches }: { matches: Match[] }) {
   const [search, setSearch] = useState('')
   const [league, setLeague] = useState('')
   const [jornada, setJornada] = useState<number | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>('schedule')
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
+    const init = new Date()
+    init.setDate(1)
+    return init
+  })
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -187,6 +235,70 @@ export function MatchesView({ matches }: { matches: Match[] }) {
     })
   }, [filtered])
 
+  const matchesByDay = useMemo(() => {
+    const map = new Map<string, Match[]>()
+    for (const match of visibleMatches) {
+      const date = parseDateInput(match.match_date)
+      if (!date) continue
+      const key = toISODate(date)
+      const bucket = map.get(key) ?? []
+      bucket.push(match)
+      bucket.sort((a, b) => matchSortKey(a.match_date, a.match_time).localeCompare(matchSortKey(b.match_date, b.match_time)))
+      map.set(key, bucket)
+    }
+    return map
+  }, [visibleMatches])
+
+  const monthMatchDates = useMemo(() => {
+    const set = new Set<string>()
+    for (const [dateKey] of matchesByDay) {
+      const parsed = parseDateInput(dateKey)
+      if (!parsed) continue
+      if (parsed.getFullYear() === calendarMonth.getFullYear() && parsed.getMonth() === calendarMonth.getMonth()) {
+        set.add(dateKey)
+      }
+    }
+    return set
+  }, [calendarMonth, matchesByDay])
+
+  useEffect(() => {
+    const currentMonthMatchDates = [...monthMatchDates].sort()
+    if (!currentMonthMatchDates.length) {
+      setSelectedDate(null)
+      return
+    }
+
+    const monthHasSelectedDate = selectedDate ? monthMatchDates.has(selectedDate) : false
+    setSelectedDate((current) => {
+      if (current && monthHasSelectedDate) return current
+      return currentMonthMatchDates[0]
+    })
+  }, [calendarMonth, monthMatchDates, selectedDate])
+
+  const selectedDateMatches = useMemo(() => {
+    if (!selectedDate) return []
+    return (matchesByDay.get(selectedDate) ?? []).sort((a, b) =>
+      matchSortKey(a.match_date, a.match_time).localeCompare(matchSortKey(b.match_date, b.match_time)),
+    )
+  }, [matchesByDay, selectedDate])
+
+  const calendarDays = useMemo(() => {
+    const year = calendarMonth.getFullYear()
+    const month = calendarMonth.getMonth()
+    const startOfMonth = new Date(year, month, 1)
+    const offset = startOfMonth.getDay() === 0 ? 6 : startOfMonth.getDay() - 1
+    const startOfGrid = new Date(year, month, 1 - offset)
+    const days: Date[] = []
+
+    for (let index = 0; index < 42; index += 1) {
+      const date = new Date(startOfGrid)
+      date.setDate(startOfGrid.getDate() + index)
+      days.push(date)
+    }
+
+    return days
+  }, [calendarMonth])
+
   const selectedLeagueLabel = leagueLabels[league] ?? 'Competiciones'
 
   const hasFilters = search
@@ -194,100 +306,188 @@ export function MatchesView({ matches }: { matches: Match[] }) {
     setSearch('')
   }
 
+  const weekdays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do']
+
   return (
     <>
       <SiteHeader
-        title={selectedLeagueLabel}
-        search={search}
-        onSearchChange={setSearch}
+        title={viewMode === 'calendar' ? 'Calendario' : selectedLeagueLabel}
+        search={viewMode === 'schedule' ? search : undefined}
+        onSearchChange={viewMode === 'schedule' ? setSearch : undefined}
+        showSearch={viewMode === 'schedule'}
+        activeView={viewMode}
+        onViewChange={setViewMode}
       />
 
       <main className="mx-auto -mt-4 w-full max-w-7xl px-4 pb-16 md:px-8">
         <div className="rounded-2xl border border-border bg-card p-4 shadow-xl shadow-navy/5 md:p-6">
-          <FilterBar
-            leagues={leagues}
-            leagueLabels={leagueLabels}
-            league={league}
-            onLeagueChange={setLeague}
-            jornadas={jornadas}
-            jornada={jornada}
-            onJornadaChange={setJornada}
-          />
+          {viewMode === 'schedule' ? (
+            <>
+              <FilterBar
+                leagues={leagues}
+                leagueLabels={leagueLabels}
+                league={league}
+                onLeagueChange={setLeague}
+                jornadas={jornadas}
+                jornada={jornada}
+                onJornadaChange={setJornada}
+              />
 
-          <div className="mt-6 flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="inline-block font-display text-lg font-extrabold uppercase tracking-tight text-foreground">
-                {selectedLeagueLabel}
-              </h2>
-              <div className="mt-1 h-0.5 w-24 rounded-full bg-orange" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                {filtered.length} {filtered.length === 1 ? 'partido' : 'partidos'}
-              </p>
-            </div>
+              <div className="mt-6 flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="inline-block font-display text-lg font-extrabold uppercase tracking-tight text-foreground">
+                    {selectedLeagueLabel}
+                  </h2>
+                  <div className="mt-1 h-0.5 w-24 rounded-full bg-orange" />
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {filtered.length} {filtered.length === 1 ? 'partido' : 'partidos'}
+                  </p>
+                </div>
 
-            <div className="flex items-center gap-2">
-              {hasFilters ? (
-                <button
-                  type="button"
-                  onClick={clearAll}
-                  className="flex h-11 items-center gap-1 rounded-lg border border-input px-3 text-sm font-semibold text-muted-foreground transition hover:border-orange hover:text-orange"
-                >
-                  <X className="h-4 w-4" /> Limpiar
-                </button>
-              ) : null}
-            </div>
-          </div>
+                <div className="flex items-center gap-2">
+                  {hasFilters ? (
+                    <button
+                      type="button"
+                      onClick={clearAll}
+                      className="flex h-11 items-center gap-1 rounded-lg border border-input px-3 text-sm font-semibold text-muted-foreground transition hover:border-orange hover:text-orange"
+                    >
+                      <X className="h-4 w-4" /> Limpiar
+                    </button>
+                  ) : null}
+                </div>
+              </div>
 
-          {groups.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-              <CalendarX2 className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
-              <p className="font-display text-lg font-bold text-foreground">
-                No hay partidos
-              </p>
-              <p className="max-w-sm text-sm text-muted-foreground">
-                No se han encontrado partidos con los filtros seleccionados. Prueba a
-                cambiar la jornada, la fecha o el término de búsqueda.
-              </p>
-            </div>
+              {groups.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+                  <CalendarX2 className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
+                  <p className="font-display text-lg font-bold text-foreground">
+                    No hay partidos
+                  </p>
+                  <p className="max-w-sm text-sm text-muted-foreground">
+                    No se han encontrado partidos con los filtros seleccionados. Prueba a
+                    cambiar la jornada, la fecha o el término de búsqueda.
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-6 space-y-8">
+                  {groups.map(({ key, dateKey, list }) => (
+                    <section key={key}>
+                      <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <h3 className="font-display text-base font-bold text-foreground">
+                          {formatLongDate(dateKey === 'sin-fecha' ? null : dateKey)}
+                        </h3>
+                      </div>
+
+                      <div className="space-y-3">
+                        {list.map((match) => (
+                          <MatchCard key={match.match_id} match={match} />
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              )}
+            </>
           ) : (
-            <div className="mt-6 space-y-8">
-              {groups.map(({ key, dateKey, list }) => (
-                <section key={key}>
-                  <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <h3 className="font-display text-base font-bold text-foreground">
-                      {formatLongDate(dateKey === 'sin-fecha' ? null : dateKey)}
-                    </h3>
+            <>
+              <div className="mx-auto max-w-4xl">
+                <div className="rounded-2xl border border-border bg-secondary/30 p-4 md:p-5">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
+                      className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-foreground transition hover:border-orange hover:text-orange"
+                      aria-label="Mes anterior"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+
+                    <div className="text-center">
+                      <p className="font-display text-xl font-extrabold uppercase tracking-wide text-foreground md:text-2xl">
+                        {monthLabel(calendarMonth)}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}
+                      className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-foreground transition hover:border-orange hover:text-orange"
+                      aria-label="Mes siguiente"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
                   </div>
-                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                    {list.map((m) => (
-                      <MatchCard key={String(m.match_id)} match={m} />
+
+                  <div className="grid grid-cols-7 gap-2 text-center text-[0.7rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                    {weekdays.map((day) => (
+                      <div key={day} className="px-1 py-2">
+                        {day}
+                      </div>
                     ))}
                   </div>
-                </section>
-              ))}
-            </div>
+
+                  <div className="mt-2 grid grid-cols-7 gap-2">
+                    {calendarDays.map((day) => {
+                      const isoDay = toISODate(day)
+                      const isCurrentMonth = day.getMonth() === calendarMonth.getMonth()
+                      const hasMatch = monthMatchDates.has(isoDay)
+                      const isSelected = selectedDate === isoDay
+
+                      return (
+                        <button
+                          key={isoDay}
+                          type="button"
+                          onClick={() => setSelectedDate(isoDay)}
+                          className={[
+                            'flex min-h-20 flex-col items-center justify-start rounded-xl border p-2 text-center transition',
+                            isSelected
+                              ? 'border-orange bg-orange/10 ring-2 ring-orange/30'
+                              : 'border-border bg-card hover:border-orange/60 hover:bg-secondary/70',
+                            !isCurrentMonth ? 'text-muted-foreground/60' : 'text-foreground',
+                          ].join(' ')}
+                        >
+                          <span className="font-display text-sm font-bold">
+                            {day.getDate()}
+                          </span>
+                          {hasMatch ? <span className="mt-2 h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" /> : <span className="mt-2 h-2 w-2 rounded-full bg-transparent" aria-hidden="true" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between gap-2">
+                    <h3 className="font-display text-lg font-extrabold uppercase tracking-tight text-foreground">
+                      {selectedDate ? formatLongDate(selectedDate) : 'Sin partidos'}
+                    </h3>
+                    {selectedDate ? (
+                      <span className="rounded-full bg-orange/10 px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-orange">
+                        {selectedDateMatches.length} {selectedDateMatches.length === 1 ? 'partido' : 'partidos'}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {selectedDateMatches.length ? (
+                    <div className="space-y-3">
+                      {selectedDateMatches.map((match) => (
+                        <MatchCard key={match.match_id} match={match} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-secondary/20 px-6 py-12 text-center">
+                      <CalendarX2 className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+                      <p className="text-sm text-muted-foreground">
+                        No hay partidos programados para esta fecha.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
           )}
         </div>
-
-        <SiteFooter />
       </main>
     </>
-  )
-}
-
-function SiteFooter() {
-  return (
-    <footer className="mt-10 text-center text-sm text-muted-foreground">
-      <p>
-        Copyright © {new Date().getFullYear()}. Todos los derechos reservados.
-      </p>
-      <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-orange">
-        <span>Aviso Legal</span>
-        <span className="text-border">·</span>
-        <span>Política de Privacidad</span>
-        <span className="text-border">·</span>
-        <span>Política de Cookies</span>
-      </div>
-    </footer>
   )
 }

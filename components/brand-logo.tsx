@@ -14,17 +14,14 @@ export function BrandLogo() {
         </span>
       </span>
       <span className="hidden flex-col leading-none sm:flex">
-        <span className="font-display text-[0.65rem] font-bold uppercase tracking-widest text-cyan">
-          Federació
+        <span className="font-display text-[0.7rem] font-bold uppercase tracking-[0.18em] text-cyan">
+          Portal del
         </span>
-        <span className="font-display text-[0.65rem] font-semibold uppercase tracking-widest text-navy-foreground/80">
-          de Fútbol
+        <span className="font-display text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-navy-foreground/80">
+          Fútbol
         </span>
-        <span className="font-display text-[0.65rem] font-semibold uppercase tracking-widest text-navy-foreground/80">
-          Comunitat
-        </span>
-        <span className="font-display text-[0.65rem] font-semibold uppercase tracking-widest text-navy-foreground/80">
-          Valenciana
+        <span className="font-display text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-navy-foreground/80">
+          Valenciano
         </span>
       </span>
     </Link>

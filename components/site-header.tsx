@@ -11,6 +11,8 @@ type SiteHeaderProps = {
   search?: string
   onSearchChange?: (value: string) => void
   showSearch?: boolean
+  activeView?: 'schedule' | 'calendar'
+  onViewChange?: (view: 'schedule' | 'calendar') => void
 }
 
 export function SiteHeader({
@@ -19,6 +21,8 @@ export function SiteHeader({
   search,
   onSearchChange,
   showSearch = true,
+  activeView = 'schedule',
+  onViewChange,
 }: SiteHeaderProps) {
   return (
     <header className="relative overflow-hidden bg-navy text-navy-foreground">
@@ -37,7 +41,7 @@ export function SiteHeader({
       <div className="relative mx-auto w-full max-w-7xl px-4 pb-8 pt-6 md:px-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <BrandLogo />
-          <SiteNav />
+          <SiteNav activeView={activeView} onViewChange={onViewChange} />
         </div>
 
         <div className="mt-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
