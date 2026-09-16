@@ -9,6 +9,7 @@ type JornadaOption = { value: number; date: string | null }
 type FilterBarProps = {
   leagues: (number | string)[]
   leagueLabels: Record<string, string>
+  femaleLeagueIds: Set<string>
   league: string
   onLeagueChange: (v: string) => void
   jornadas: JornadaOption[]
@@ -47,6 +48,7 @@ const selectClass =
 export function FilterBar({
   leagues,
   leagueLabels,
+  femaleLeagueIds,
   league,
   onLeagueChange,
   jornadas,
@@ -68,14 +70,18 @@ export function FilterBar({
             onChange={(e) => onLeagueChange(e.target.value)}
             className={`${selectClass} border-orange ring-2 ring-orange/40 focus:ring-orange`}
           >
-            {leagues.map((l) => {
-              const value = String(l)
-              return (
-                <option key={value} value={value}>
-                  {leagueLabels[value] ?? value}
-                </option>
-              )
-            })}
+            <optgroup label="Fútbol Masculino">
+              {leagues.filter((l) => !femaleLeagueIds.has(String(l))).map((l) => {
+                const value = String(l)
+                return <option key={value} value={value}>{leagueLabels[value] ?? value}</option>
+              })}
+            </optgroup>
+            <optgroup label="Fútbol Femenino">
+              {leagues.filter((l) => femaleLeagueIds.has(String(l))).map((l) => {
+                const value = String(l)
+                return <option key={value} value={value}>{leagueLabels[value] ?? value}</option>
+              })}
+            </optgroup>
           </select>
         </Field>
       </div>

@@ -10,6 +10,16 @@ import type { Match } from '@/lib/types'
 
 type ViewMode = 'schedule' | 'calendar'
 
+const leagueOrder = [
+  '905431605', '905431822', '905431823', '905431607', '905431608', '905431609',
+  '905431612', '905431613', '905431614', '905431615', '905431619', '905431616',
+  '905431621', '905431622', '905431623', '905431624', '905431625', '905431626',
+  '905431627', '905431628', '905431629', '905431630', '905431631', '905432483',
+  '905431519', '905431877', '905431926', '905431927',
+]
+
+const femaleLeagueIds = new Set(['905431519', '905431877', '905431926', '905431927'])
+
 function normalizeJornada(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null
   const number = Number(String(value).trim())
@@ -92,7 +102,7 @@ const competitionLabels: Record<string, string> = {
   '905431631': 'Tercera FFCV - Grup 11',
   '905431822': 'Lliga Comunitat - Grup Nord',
   '905431823': 'Lliga Comunitat - Grup Sud',
-  '905431877': 'Lliga Autonòmica Valenta - Grup Únic',
+  '905431877': 'Lliga Autonòmica Valenta',
   '905431926': '1ª Regional Valenta - Grup 1',
   '905431927': '1ª Regional Valenta - Grup 2',
   '905432483': 'VI La Nostra Copa',
@@ -108,7 +118,7 @@ function displayLeagueName(match: Match): string {
     ?? `Liga ${normalizeLeagueId(match.league_id) ?? 'sin nombre'}`
 }
 
-export function MatchesView({ matches }: { matches: Match[] }) {
+export function MatchesView({ matches, initialView }: { matches: Match[]; initialView: ViewMode }) {
   const visibleMatches = useMemo(
     () => matches.filter((match) => {
       const leagueName = normalizeLeagueName(match.league_name)
@@ -121,7 +131,7 @@ export function MatchesView({ matches }: { matches: Match[] }) {
   const [search, setSearch] = useState('')
   const [league, setLeague] = useState('')
   const [jornada, setJornada] = useState<number | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('schedule')
+  const [viewMode] = useState<ViewMode>(initialView)
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
     const init = new Date()
     init.setDate(1)
@@ -143,7 +153,11 @@ export function MatchesView({ matches }: { matches: Match[] }) {
         const label = displayLeagueName(visibleMatches.find((match) => normalizeLeagueId(match.league_id) === id) ?? { league_id: id, league_name: null } as Match)
         return !isJuvenilLeague(label)
       })
-      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+      .sort((a, b) => {
+        const aIndex = leagueOrder.indexOf(a)
+        const bIndex = leagueOrder.indexOf(b)
+        return (aIndex === -1 ? leagueOrder.length : aIndex) - (bIndex === -1 ? leagueOrder.length : bIndex)
+      })
   }, [visibleMatches])
 
   const leagueLabels = useMemo(
@@ -194,6 +208,7 @@ export function MatchesView({ matches }: { matches: Match[] }) {
   useEffect(() => {
     if (!league || jornada === null) return
     const url = new URL(window.location.href)
+    url.pathname = '/'
     url.searchParams.set('league', league)
     url.searchParams.set('jornada', String(jornada))
     window.history.replaceState(null, '', `${url.pathname}?${url.searchParams.toString()}`)
@@ -316,7 +331,6 @@ export function MatchesView({ matches }: { matches: Match[] }) {
         onSearchChange={viewMode === 'schedule' ? setSearch : undefined}
         showSearch={viewMode === 'schedule'}
         activeView={viewMode}
-        onViewChange={setViewMode}
       />
 
       <main className="mx-auto -mt-4 w-full max-w-7xl px-4 pb-16 md:px-8">
@@ -326,6 +340,7 @@ export function MatchesView({ matches }: { matches: Match[] }) {
               <FilterBar
                 leagues={leagues}
                 leagueLabels={leagueLabels}
+                femaleLeagueIds={femaleLeagueIds}
                 league={league}
                 onLeagueChange={setLeague}
                 jornadas={jornadas}

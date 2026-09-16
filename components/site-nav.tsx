@@ -20,30 +20,11 @@ export function SiteNav({ activeView = 'schedule', onViewChange }: SiteNavProps)
       {ITEMS.map((item) => {
         const isActive = activeView === item.key
 
-        if (item.key === 'schedule') {
-          return (
-            <Link
-              key={item.key}
-              href="/"
-              aria-current={isActive ? 'page' : undefined}
-              onClick={() => onViewChange?.('schedule')}
-              className={
-                isActive
-                  ? 'rounded-full bg-orange px-5 py-2.5 font-display text-xs font-bold tracking-wide text-primary-foreground shadow-lg shadow-orange/30 transition hover:brightness-110 md:text-sm'
-                  : 'rounded-full border border-cyan/50 bg-navy-deep/40 px-5 py-2.5 font-display text-xs font-bold tracking-wide text-navy-foreground transition hover:border-cyan hover:bg-navy-deep/70 md:text-sm'
-              }
-            >
-              {item.label}
-            </Link>
-          )
-        }
-
         return (
-          <button
+          <Link
             key={item.key}
-            type="button"
-            aria-pressed={isActive}
-            onClick={() => onViewChange?.('calendar')}
+            href={item.key === 'schedule' ? '/partidos' : '/calendario'}
+            aria-current={isActive ? 'page' : undefined}
             className={
               isActive
                 ? 'rounded-full bg-orange px-5 py-2.5 font-display text-xs font-bold tracking-wide text-primary-foreground shadow-lg shadow-orange/30 transition hover:brightness-110 md:text-sm'
@@ -51,7 +32,7 @@ export function SiteNav({ activeView = 'schedule', onViewChange }: SiteNavProps)
             }
           >
             {item.label}
-          </button>
+          </Link>
         )
       })}
     </nav>

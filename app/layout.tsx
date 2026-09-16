@@ -17,10 +17,9 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: 'Calendario de Partidos',
+  title: 'MatchVLC | Resultados y Horarios del Fútbol Valenciano',
   description:
-    'Consulta el calendario de partidos, resultados, horarios y detalles de cada encuentro por jornada y competición.',
-  generator: 'v0.app',
+    'Sigue todos los partidos del fútbol valenciano en MatchVLC. Resultados en directo, clasificaciones y horarios actualizados de las ligas de la Comunitat Valenciana.',
 }
 
 export const viewport: Viewport = {

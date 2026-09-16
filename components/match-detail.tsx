@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ArrowLeft, CalendarDays, Clock, MapPin, Trophy, Flag, Hash } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { BrandLogo } from '@/components/brand-logo'
 import { SiteNav } from '@/components/site-nav'
 import { TeamCrest } from '@/components/team-crest'
@@ -13,7 +14,7 @@ function DetailRow({
 }: {
   icon: typeof CalendarDays
   label: string
-  value: string
+  value: ReactNode
 }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm">
@@ -33,6 +34,9 @@ function DetailRow({
 export function MatchDetail({ match }: { match: Match }) {
   const finished = isFinished(match)
   const statusLabel = finished ? 'Finalizado' : 'Programado'
+  const mapsUrl = match.location
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location)}`
+    : null
 
   return (
     <>
@@ -61,7 +65,14 @@ export function MatchDetail({ match }: { match: Match }) {
               {match.jornada != null ? ` · Jornada ${match.jornada}` : ''}
             </p>
             {match.location ? (
-              <p className="mt-1 text-sm text-navy-foreground/70">{match.location}</p>
+              <a
+                href={mapsUrl ?? undefined}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 inline-block text-sm text-navy-foreground/70 underline decoration-cyan/60 underline-offset-4 transition hover:text-cyan"
+              >
+                {match.location}
+              </a>
             ) : null}
 
             <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:gap-8">
@@ -124,7 +135,16 @@ export function MatchDetail({ match }: { match: Match }) {
             <DetailRow
               icon={MapPin}
               label="Lugar"
-              value={match.location ?? 'Por confirmar'}
+              value={mapsUrl ? (
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-orange underline decoration-orange/40 underline-offset-4 transition hover:brightness-110"
+                >
+                  {match.location}
+                </a>
+              ) : 'Por confirmar'}
             />
             <DetailRow icon={Flag} label="Estado" value={statusLabel} />
             {match.jornada != null ? (
