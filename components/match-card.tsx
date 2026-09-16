@@ -34,28 +34,49 @@ function formatDateLabel(value: string | null): string {
 export function MatchCard({ match }: { match: Match }) {
   const finished = isFinished(match)
   const showScore = finished || (hasScore(match.home_score) && hasScore(match.away_score))
+  const mapsUrl = match.location
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location)}`
+    : null
 
   return (
-    <Link
-      href={`/match/${match.match_id}`}
-      className="group flex items-stretch overflow-hidden rounded-xl border border-border bg-card shadow-sm transition hover:-translate-y-0.5 hover:border-orange/50 hover:shadow-md"
-    >
-      <div className="flex flex-1 flex-col justify-center gap-3 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          <span>{formatLongDate(match.match_date ?? null).replace(/^\w/, (c) => c.toUpperCase())}</span>
-          <span className="text-orange">{formatTime(match.match_time)}</span>
-        </div>
+    <div className="group flex items-stretch overflow-hidden rounded-xl border border-border bg-card shadow-sm transition hover:-translate-y-0.5 hover:border-orange/50 hover:shadow-md">
+      <div className="flex flex-1 flex-col">
+        <Link
+          href={`/match/${match.match_id}`}
+          className="flex flex-1 flex-col justify-center gap-3 p-4"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            <span>{formatLongDate(match.match_date ?? null).replace(/^\w/, (c) => c.toUpperCase())}</span>
+            <span className="text-orange">{formatTime(match.match_time)}</span>
+          </div>
 
-        <TeamRow name={match.home_team} score={match.home_score} showScore={showScore} />
-        <TeamRow name={match.away_team} score={match.away_score} showScore={showScore} />
+          <TeamRow name={match.home_team} score={match.home_score} showScore={showScore} />
+          <TeamRow name={match.away_team} score={match.away_score} showScore={showScore} />
+        </Link>
 
-        <div className="mt-1 flex items-center gap-2 border-t border-border pt-2 text-xs text-muted-foreground">
-          <MapPin className="h-3.5 w-3.5 text-orange" aria-hidden="true" />
-          <span className="truncate">{match.location ?? 'Lugar por confirmar'}</span>
-        </div>
+        {mapsUrl ? (
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noreferrer"
+            title="Abrir ubicación en Google Maps"
+            className="relative z-10 mx-4 mb-4 flex items-center gap-2 border-t border-border pt-2 text-xs text-muted-foreground transition hover:text-orange"
+          >
+            <MapPin className="h-3.5 w-3.5 text-orange" aria-hidden="true" />
+            <span className="truncate">{match.location}</span>
+          </a>
+        ) : (
+          <div className="mx-4 mb-4 flex items-center gap-2 border-t border-border pt-2 text-xs text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5 text-orange" aria-hidden="true" />
+            <span className="truncate">Lugar por confirmar</span>
+          </div>
+        )}
       </div>
 
-      <div className="flex w-28 shrink-0 flex-col items-center justify-center gap-1.5 border-l border-border bg-secondary/50 px-2">
+      <Link
+        href={`/match/${match.match_id}`}
+        className="flex w-28 shrink-0 flex-col items-center justify-center gap-1.5 border-l border-border bg-secondary/50 px-2"
+      >
         {finished ? (
           <>
             <span className="rounded-full bg-score/10 px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide text-score">
@@ -75,7 +96,7 @@ export function MatchCard({ match }: { match: Match }) {
             </span>
           </>
         )}
-      </div>
-    </Link>
+      </Link>
+    </div>
   )
 }
