@@ -48,10 +48,10 @@ export function MatchCard({
 
   return (
     <div className="group flex items-stretch overflow-hidden rounded-xl border border-border bg-card shadow-sm transition hover:-translate-y-0.5 hover:border-orange/50 hover:shadow-md">
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <Link
           href={`/match/${match.match_id}`}
-          className="flex flex-1 flex-col justify-center gap-3 p-4"
+          className="flex min-w-0 flex-1 flex-col justify-center gap-3 p-4"
         >
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-muted-foreground">
             <span>{formatLongDate(match.match_date ?? null).replace(/^\w/, (c) => c.toUpperCase())}</span>
@@ -60,7 +60,7 @@ export function MatchCard({
 
           {showCompetition ? (
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-muted-foreground">
-              <span className="truncate">{competitionLabel ?? match.league_name ?? 'Competición'}</span>
+              <span className="min-w-0 truncate">{competitionLabel ?? match.league_name ?? 'Competición'}</span>
               {match.jornada != null ? <span className="shrink-0 text-orange">Jornada {match.jornada}</span> : null}
             </div>
           ) : null}
@@ -75,39 +75,39 @@ export function MatchCard({
             target="_blank"
             rel="noreferrer"
             title="Abrir ubicación en Google Maps"
-            className="relative z-10 mx-4 mb-4 flex items-center gap-2 border-t border-border pt-2 text-xs text-muted-foreground transition hover:text-orange"
+            className="relative z-10 mx-4 mb-4 flex min-w-0 items-center gap-2 border-t border-border pt-2 text-xs text-muted-foreground transition hover:text-orange"
           >
-            <MapPin className="h-3.5 w-3.5 text-orange" aria-hidden="true" />
-            <span className="truncate">{match.location}</span>
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-orange" aria-hidden="true" />
+            <span className="min-w-0 truncate">{match.location}</span>
           </a>
         ) : (
-          <div className="mx-4 mb-4 flex items-center gap-2 border-t border-border pt-2 text-xs text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5 text-orange" aria-hidden="true" />
-            <span className="truncate">Lugar por confirmar</span>
+          <div className="mx-4 mb-4 flex min-w-0 items-center gap-2 border-t border-border pt-2 text-xs text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-orange" aria-hidden="true" />
+            <span className="min-w-0 truncate">Lugar por confirmar</span>
           </div>
         )}
       </div>
 
       <Link
         href={`/match/${match.match_id}`}
-        className="flex w-28 shrink-0 flex-col items-center justify-center gap-1.5 border-l border-border bg-secondary/50 px-2"
+        className="flex w-20 shrink-0 flex-col items-center justify-center gap-1.5 border-l border-border bg-secondary/50 px-1.5 text-center sm:w-28 sm:px-2"
       >
         {finished ? (
           <>
-            <span className="rounded-full bg-score/10 px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide text-score">
+            <span className="rounded-full bg-score/10 px-1.5 py-0.5 text-[0.55rem] font-bold uppercase tracking-wide text-score sm:px-2 sm:text-[0.6rem]">
               Final
             </span>
-            <span className="flex items-center gap-1 text-xs font-semibold text-muted-foreground transition group-hover:text-orange">
-              Detalles <ChevronRight className="h-3 w-3" />
+            <span className="flex items-center gap-1 text-[0.7rem] font-semibold text-muted-foreground transition group-hover:text-orange sm:text-xs">
+              Detalles <ChevronRight className="h-3 w-3 shrink-0" />
             </span>
           </>
         ) : (
           <>
-            <span className="font-display text-lg font-extrabold text-foreground tabular-nums">
+            <span className="font-display text-base font-extrabold text-foreground tabular-nums sm:text-lg">
               {formatTime(match.match_time)}
             </span>
-            <span className="flex items-center gap-1 text-xs font-semibold text-orange">
-              Ver detalles <ChevronRight className="h-3 w-3" />
+            <span className="flex items-center gap-1 text-[0.7rem] font-semibold text-orange sm:text-xs">
+              Ver detalles <ChevronRight className="h-3 w-3 shrink-0" />
             </span>
           </>
         )}

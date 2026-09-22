@@ -76,34 +76,34 @@ export function MatchDetail({ match }: { match: Match }) {
               </a>
             ) : null}
 
-            <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-4 md:gap-8">
-              <div className="flex flex-col items-center gap-2 md:flex-row md:justify-end md:gap-4">
+            <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-start gap-2 sm:gap-4 md:items-center md:gap-8">
+              <div className="flex min-w-0 flex-col items-center gap-2 md:flex-row md:justify-end md:gap-4">
                 <TeamCrest name={match.home_team} size={56} />
-                <span className="text-center font-display text-lg font-extrabold text-balance md:text-right md:text-2xl">
+                <span className="w-full min-w-0 text-center font-display text-sm font-extrabold text-balance break-words sm:text-lg md:text-right md:text-2xl">
                   {match.home_team}
                 </span>
               </div>
 
-              <div className="flex flex-col items-center">
+              <div className="flex shrink-0 flex-col items-center">
                 {finished ? (
-                  <span className="font-display text-4xl font-extrabold tabular-nums md:text-5xl">
+                  <span className="font-display text-2xl font-extrabold tabular-nums sm:text-4xl md:text-5xl">
                     {match.home_score ?? 0}
-                    <span className="mx-2 text-navy-foreground/40">-</span>
+                    <span className="mx-1 text-navy-foreground/40 sm:mx-2">-</span>
                     {match.away_score ?? 0}
                   </span>
                 ) : (
-                  <span className="rounded-xl bg-navy-deep px-4 py-2 font-display text-2xl font-extrabold text-cyan ring-1 ring-cyan/40 tabular-nums md:text-3xl">
+                  <span className="rounded-xl bg-navy-deep px-2 py-1.5 font-display text-lg font-extrabold text-cyan ring-1 ring-cyan/40 tabular-nums sm:px-4 sm:py-2 sm:text-2xl md:text-3xl">
                     {formatTime(match.match_time)}
                   </span>
                 )}
-                <span className="mt-2 rounded-full bg-orange/15 px-3 py-0.5 text-xs font-bold uppercase tracking-wide text-orange">
+                <span className="mt-2 whitespace-nowrap rounded-full bg-orange/15 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-orange sm:px-3 sm:text-xs">
                   {statusLabel}
                 </span>
               </div>
 
-              <div className="flex flex-col items-center gap-2 md:flex-row md:justify-start md:gap-4">
+              <div className="flex min-w-0 flex-col items-center gap-2 md:flex-row md:justify-start md:gap-4">
                 <TeamCrest name={match.away_team} size={56} />
-                <span className="text-center font-display text-lg font-extrabold text-balance md:text-left md:text-2xl">
+                <span className="w-full min-w-0 text-center font-display text-sm font-extrabold text-balance break-words sm:text-lg md:text-left md:text-2xl">
                   {match.away_team}
                 </span>
               </div>
