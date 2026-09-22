@@ -7,7 +7,7 @@ import { MatchCard } from '@/components/match-card'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { formatLongDate, matchSortKey } from '@/lib/format'
-import type { Match } from '@/lib/types'
+import { isFinished, type Match } from '@/lib/types'
 
 type ViewMode = 'schedule' | 'calendar'
 
@@ -183,6 +183,26 @@ export function MatchesView({ matches, initialView }: { matches: Match[]; initia
       .sort((a, b) => a.value - b.value)
   }, [visibleMatches, league])
 
+  // Jornada closest to today that still has pending (unfinished) matches, falling back to the most recent one.
+  const currentJornada = useMemo(() => {
+    if (!jornadas.length) return null
+
+    const leagueMatches = visibleMatches.filter((m) => normalizeLeagueId(m.league_id) === league)
+    const sorted = [...jornadas].sort((a, b) => {
+      const dateA = parseDateInput(a.date)
+      const dateB = parseDateInput(b.date)
+      if (dateA && dateB) return dateA.getTime() - dateB.getTime()
+      if (dateA) return -1
+      if (dateB) return 1
+      return a.value - b.value
+    })
+
+    const upcoming = sorted.find((j) =>
+      leagueMatches.some((m) => normalizeJornada(m.jornada) === j.value && !isFinished(m)),
+    )
+    return upcoming ? upcoming.value : sorted[sorted.length - 1].value
+  }, [jornadas, visibleMatches, league])
+
   useEffect(() => {
     if (!leagues.length) return
     const preferred = leagues.find((id) => id === '905431605') ?? leagues.find((id) => {
@@ -202,9 +222,9 @@ export function MatchesView({ matches, initialView }: { matches: Match[]; initia
 
   useEffect(() => {
     if (jornadas.length && !jornadas.some((item) => item.value === jornada)) {
-      setJornada(jornadas[0].value)
+      setJornada(currentJornada ?? jornadas[0].value)
     }
-  }, [jornadas, jornada])
+  }, [jornadas, jornada, currentJornada])
 
   useEffect(() => {
     if (!league || jornada === null) return
