@@ -353,7 +353,7 @@ export function MatchesView({ matches, initialView }: { matches: Match[]; initia
         title={viewMode === 'calendar' ? 'Calendario' : selectedLeagueLabel}
         search={viewMode === 'schedule' ? search : undefined}
         onSearchChange={viewMode === 'schedule' ? setSearch : undefined}
-        showSearch={viewMode === 'schedule'}
+        showSearch={false}
         activeView={viewMode}
       />
 
