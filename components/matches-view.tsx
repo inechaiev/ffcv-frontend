@@ -16,10 +16,10 @@ const leagueOrder = [
   '905431612', '905431613', '905431614', '905431615', '905431619', '905431616',
   '905431621', '905431622', '905431623', '905431624', '905431625', '905431626',
   '905431627', '905431628', '905431629', '905431630', '905431631', '905432483',
-  '905431519', '905431877', '905431926', '905431927',
+  '905431519', '905431877', '905431926', '905431927', '907115182',
 ]
 
-const femaleLeagueIds = new Set(['905431519', '905431877', '905431926', '905431927'])
+const femaleLeagueIds = new Set(['905431519', '905431877', '905431926', '905431927', '907115182'])
 
 function normalizeJornada(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null
@@ -107,6 +107,7 @@ const competitionLabels: Record<string, string> = {
   '905431926': '1ª Regional Valenta - Grup 1',
   '905431927': '1ª Regional Valenta - Grup 2',
   '905432483': 'VI La Nostra Copa',
+  '907115182': 'V La Nostra Copa Valenta - Eliminatorias',
 }
 
 function isJuvenilLeague(value: string | null | undefined): boolean {
