@@ -6,7 +6,7 @@ import { SiteNav } from '@/components/site-nav'
 import { SiteFooter } from '@/components/site-footer'
 import { TeamCrest } from '@/components/team-crest'
 import { formatLongDate, formatShortDate, formatTime } from '@/lib/format'
-import { isFinished, type Match } from '@/lib/types'
+import { isFinished, matchStatusLabel, type Match } from '@/lib/types'
 
 function DetailRow({
   icon: Icon,
@@ -34,7 +34,7 @@ function DetailRow({
 
 export function MatchDetail({ match }: { match: Match }) {
   const finished = isFinished(match)
-  const statusLabel = finished ? 'Finalizado' : 'Programado'
+  const statusLabel = matchStatusLabel(match)
   const mapsUrl = match.location
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location)}`
     : null

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ChevronRight, MapPin } from 'lucide-react'
 import { TeamCrest } from '@/components/team-crest'
 import { formatLongDate, formatTime } from '@/lib/format'
-import { hasScore, isFinished, type Match } from '@/lib/types'
+import { hasScore, isFinished, isSuspended, type Match } from '@/lib/types'
 
 function TeamRow({ name, score, showScore }: { name: string; score: Match['home_score']; showScore: boolean }) {
   return (
@@ -41,6 +41,7 @@ export function MatchCard({
   competitionLabel?: string
 }) {
   const finished = isFinished(match)
+  const suspended = isSuspended(match)
   const showScore = finished || (hasScore(match.home_score) && hasScore(match.away_score))
   const mapsUrl = match.location
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location)}`
@@ -96,6 +97,15 @@ export function MatchCard({
           <>
             <span className="rounded-full bg-score/10 px-1.5 py-0.5 text-[0.55rem] font-bold uppercase tracking-wide text-score sm:px-2 sm:text-[0.6rem]">
               Final
+            </span>
+            <span className="flex items-center gap-1 text-[0.7rem] font-semibold text-muted-foreground transition group-hover:text-orange sm:text-xs">
+              Detalles <ChevronRight className="h-3 w-3 shrink-0" />
+            </span>
+          </>
+        ) : suspended ? (
+          <>
+            <span className="rounded-full bg-orange/15 px-1.5 py-0.5 text-center text-[0.55rem] font-bold uppercase tracking-wide text-orange sm:px-2 sm:text-[0.6rem]">
+              Suspendido
             </span>
             <span className="flex items-center gap-1 text-[0.7rem] font-semibold text-muted-foreground transition group-hover:text-orange sm:text-xs">
               Detalles <ChevronRight className="h-3 w-3 shrink-0" />
