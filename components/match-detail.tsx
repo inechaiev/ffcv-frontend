@@ -6,6 +6,7 @@ import { SiteNav } from '@/components/site-nav'
 import { SiteFooter } from '@/components/site-footer'
 import { TeamCrest } from '@/components/team-crest'
 import { formatLongDate, formatShortDate, formatTime } from '@/lib/format'
+import { leagueLabel, roundHref } from '@/lib/leagues'
 import { isFinished, matchStatusLabel, type Match } from '@/lib/types'
 
 function DetailRow({
@@ -26,15 +27,29 @@ function DetailRow({
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {label}
         </p>
-        <p className="truncate font-display text-sm font-bold text-foreground">{value}</p>
+        <p className="font-display text-sm font-bold text-balance break-words text-foreground">{value}</p>
       </div>
     </div>
+  )
+}
+
+function RoundLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="text-orange underline decoration-orange/40 underline-offset-4 transition hover:brightness-110"
+    >
+      {children}
+    </Link>
   )
 }
 
 export function MatchDetail({ match }: { match: Match }) {
   const finished = isFinished(match)
   const statusLabel = matchStatusLabel(match)
+  const competition = leagueLabel(match)
+  const jornadaLabel = match.jornada != null ? `Jornada ${match.jornada}` : null
+  const roundUrl = roundHref(match)
   const mapsUrl = match.location
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.location)}`
     : null
@@ -63,8 +78,31 @@ export function MatchDetail({ match }: { match: Match }) {
           <div className="mt-8 text-center">
             <p className="font-display text-sm font-semibold uppercase tracking-wide text-navy-foreground/60">
               {formatShortDate(match.match_date)}
-              {match.jornada != null ? ` · Jornada ${match.jornada}` : ''}
             </p>
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+              {roundUrl ? (
+                <Link
+                  href={roundUrl}
+                  className="font-display text-sm font-bold text-cyan underline decoration-cyan/60 underline-offset-4 transition hover:text-white"
+                >
+                  {competition}
+                </Link>
+              ) : (
+                <span className="font-display text-sm font-bold text-cyan">{competition}</span>
+              )}
+              {jornadaLabel ? (
+                roundUrl ? (
+                  <Link
+                    href={roundUrl}
+                    className="font-display text-sm font-bold text-orange underline decoration-orange/60 underline-offset-4 transition hover:text-white"
+                  >
+                    {jornadaLabel}
+                  </Link>
+                ) : (
+                  <span className="font-display text-sm font-bold text-orange">{jornadaLabel}</span>
+                )
+              ) : null}
+            </div>
             {match.location ? (
               <a
                 href={mapsUrl ?? undefined}
@@ -148,16 +186,22 @@ export function MatchDetail({ match }: { match: Match }) {
               ) : 'Por confirmar'}
             />
             <DetailRow icon={Flag} label="Estado" value={statusLabel} />
-            {match.jornada != null ? (
-              <DetailRow icon={Hash} label="Jornada" value={String(match.jornada)} />
-            ) : null}
-            {match.league_name ? (
-              <DetailRow
-                icon={Trophy}
-                label="Competición"
-                value={match.league_name}
-              />
-            ) : null}
+            <DetailRow
+              icon={Trophy}
+              label="Competición"
+              value={roundUrl ? <RoundLink href={roundUrl}>{competition}</RoundLink> : competition}
+            />
+            <DetailRow
+              icon={Hash}
+              label="Jornada"
+              value={
+                jornadaLabel
+                  ? roundUrl
+                    ? <RoundLink href={roundUrl}>{jornadaLabel}</RoundLink>
+                    : jornadaLabel
+                  : 'Por confirmar'
+              }
+            />
           </div>
 
           <div className="mt-4 rounded-xl border border-border bg-secondary/40 p-4">

@@ -1,12 +1,13 @@
 'use client'
 
 import { CalendarX2, ChevronLeft, ChevronRight, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { FilterBar } from '@/components/filter-bar'
 import { MatchCard } from '@/components/match-card'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { formatLongDate, matchSortKey } from '@/lib/format'
+import { leagueLabel } from '@/lib/leagues'
 import { isFinished, type Match } from '@/lib/types'
 
 type ViewMode = 'schedule' | 'calendar'
@@ -78,49 +79,25 @@ function monthLabel(date: Date): string {
   }).format(date).replace(/^(\w)/, (char) => char.toUpperCase())
 }
 
-const competitionLabels: Record<string, string> = {
-  '905431519': 'Tercera Federación de Fútbol Femenino - Grupo VI',
-  '905431605': 'Tercera Federación - Grup VI',
-  '905431607': 'Primera FFCV - Grup 1',
-  '905431608': 'Primera FFCV - Grup 2',
-  '905431609': 'Primera FFCV - Grup 3',
-  '905431612': 'Segona FFCV - Grup 1',
-  '905431613': 'Segona FFCV - Grup 2',
-  '905431614': 'Segona FFCV - Grup 3',
-  '905431615': 'Segona FFCV - Grup 4',
-  '905431616': 'Segona FFCV - Grup 6',
-  '905431619': 'Segona FFCV - Grup 5',
-  '905431621': 'Tercera FFCV - Grup 1',
-  '905431622': 'Tercera FFCV - Grup 2',
-  '905431623': 'Tercera FFCV - Grup 3',
-  '905431624': 'Tercera FFCV - Grup 4',
-  '905431625': 'Tercera FFCV - Grup 5',
-  '905431626': 'Tercera FFCV - Grup 6',
-  '905431627': 'Tercera FFCV - Grup 7',
-  '905431628': 'Tercera FFCV - Grup 8',
-  '905431629': 'Tercera FFCV - Grup 9',
-  '905431630': 'Tercera FFCV - Grup 10',
-  '905431631': 'Tercera FFCV - Grup 11',
-  '905431822': 'Lliga Comunitat - Grup Nord',
-  '905431823': 'Lliga Comunitat - Grup Sud',
-  '905431877': 'Lliga Autonòmica Valenta',
-  '905431926': '1ª Regional Valenta - Grup 1',
-  '905431927': '1ª Regional Valenta - Grup 2',
-  '905432483': 'VI La Nostra Copa',
-  '907115182': 'V La Nostra Copa Valenta - Eliminatorias',
-}
-
 function isJuvenilLeague(value: string | null | undefined): boolean {
   return Boolean(value && value.toLowerCase().includes('juvenil'))
 }
 
 function displayLeagueName(match: Match): string {
-  return competitionLabels[normalizeLeagueId(match.league_id) ?? '']
-    ?? normalizeLeagueName(match.league_name)
-    ?? `Liga ${normalizeLeagueId(match.league_id) ?? 'sin nombre'}`
+  return leagueLabel(match)
 }
 
-export function MatchesView({ matches, initialView }: { matches: Match[]; initialView: ViewMode }) {
+export function MatchesView({
+  matches,
+  initialView,
+  initialLeague = null,
+  initialJornada = null,
+}: {
+  matches: Match[]
+  initialView: ViewMode
+  initialLeague?: string | null
+  initialJornada?: string | null
+}) {
   const visibleMatches = useMemo(
     () => matches.filter((match) => {
       const leagueName = normalizeLeagueName(match.league_name)
@@ -131,8 +108,9 @@ export function MatchesView({ matches, initialView }: { matches: Match[]; initia
   )
 
   const [search, setSearch] = useState('')
-  const [league, setLeague] = useState('')
-  const [jornada, setJornada] = useState<number | null>(null)
+  const [league, setLeague] = useState(() => normalizeLeagueId(initialLeague) ?? '')
+  const [jornada, setJornada] = useState<number | null>(() => normalizeJornada(initialJornada))
+  const urlQueryRef = useRef<{ league: string | null; jornada: number | null } | undefined>(undefined)
   const [viewMode] = useState<ViewMode>(initialView)
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
     const init = new Date()
@@ -143,11 +121,12 @@ export function MatchesView({ matches, initialView }: { matches: Match[]; initia
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const urlLeague = params.get('league')
-    const urlJornada = normalizeJornada(params.get('jornada'))
+    const urlLeague = normalizeLeagueId(params.get('league')) ?? normalizeLeagueId(initialLeague)
+    const urlJornada = normalizeJornada(params.get('jornada')) ?? normalizeJornada(initialJornada)
+    urlQueryRef.current = { league: urlLeague, jornada: urlJornada }
     if (urlLeague) setLeague(urlLeague)
     if (urlJornada !== null) setJornada(urlJornada)
-  }, [])
+  }, [initialLeague, initialJornada])
 
   const leagues = useMemo(() => {
     return [...new Set(visibleMatches.map((m) => normalizeLeagueId(m.league_id)).filter(Boolean) as string[])]
@@ -205,27 +184,36 @@ export function MatchesView({ matches, initialView }: { matches: Match[]; initia
   }, [jornadas, visibleMatches, league])
 
   useEffect(() => {
-    if (!leagues.length) return
+    if (!leagues.length || urlQueryRef.current === undefined) return
+    if (league && leagues.includes(league)) return
+
+    const requested = urlQueryRef.current.league
+    if (requested && leagues.includes(requested)) {
+      setLeague(requested)
+      return
+    }
+
     const preferred = leagues.find((id) => id === '905431605') ?? leagues.find((id) => {
       const label = leagueLabels[id] ?? ''
       return label.toLocaleLowerCase().includes('tercera federación') &&
         label.toLocaleLowerCase().includes('grup vi')
     })
-    const nextLeague = league && leagues.includes(league) ? league : preferred ?? leagues[0]
+    const nextLeague = preferred ?? leagues[0]
     if (nextLeague !== league) setLeague(nextLeague)
   }, [leagues, league, leagueLabels])
 
   useEffect(() => {
-    if (league && !leagues.includes(league)) {
-      setLeague(leagues[0] ?? '')
-    }
-  }, [league, leagues])
+    if (urlQueryRef.current === undefined || !league || !jornadas.length) return
+    if (jornada !== null && jornadas.some((item) => item.value === jornada)) return
 
-  useEffect(() => {
-    if (jornadas.length && !jornadas.some((item) => item.value === jornada)) {
-      setJornada(currentJornada ?? jornadas[0].value)
+    const requested = urlQueryRef.current.jornada
+    if (jornada === null && requested !== null && jornadas.some((item) => item.value === requested)) {
+      setJornada(requested)
+      return
     }
-  }, [jornadas, jornada, currentJornada])
+
+    setJornada(currentJornada ?? jornadas[0].value)
+  }, [league, jornadas, jornada, currentJornada])
 
   useEffect(() => {
     if (!league || jornada === null) return

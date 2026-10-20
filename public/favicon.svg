@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#141f52"/>
+  <defs><clipPath id="ball"><circle cx="32" cy="33" r="21.3"/></clipPath></defs>
+  <circle cx="32" cy="33" r="22" fill="#f7f8fb"/>
+  <g clip-path="url(#ball)" stroke="#141f52" stroke-width="1.35" stroke-linejoin="round">
+    <polygon fill="#f7f8fb" points="32,24 40.56,30.22 50.22,25.92 41.67,19.7 33.11,13.48 41.67,19.7"/>
+    <polygon fill="#f7f8fb" points="40.56,30.22 37.29,40.28 44.37,48.14 47.64,38.08 50.91,28.02 47.64,38.08"/>
+    <polygon fill="#f7f8fb" points="37.29,40.28 26.71,40.28 21.42,49.44 32,49.44 42.58,49.44 32,49.44"/>
+    <polygon fill="#f7f8fb" points="26.71,40.28 23.44,30.22 13.09,28.02 16.36,38.08 19.63,48.14 16.36,38.08"/>
+    <polygon fill="#f7f8fb" points="23.44,30.22 32,24 30.89,13.48 22.33,19.7 13.78,25.92 22.33,19.7"/>
+    <polygon fill="#141f52" stroke="#141f52" points="32,24 40.56,30.22 37.29,40.28 26.71,40.28 23.44,30.22"/>
+  </g>
+</svg>

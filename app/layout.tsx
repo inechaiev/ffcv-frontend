@@ -1,4 +1,3 @@
-import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Inter, Poppins } from 'next/font/google'
 import './globals.css'
@@ -20,6 +19,11 @@ export const metadata: Metadata = {
   title: 'MatchVLC | Resultados y Horarios del Fútbol Valenciano',
   description:
     'Sigue todos los partidos del fútbol valenciano en MatchVLC. Resultados en directo, clasificaciones y horarios actualizados de las ligas de la Comunitat Valenciana.',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 }
 
 export const viewport: Viewport = {
@@ -36,7 +40,6 @@ export default function RootLayout({
     <html lang="es" className={`${inter.variable} ${poppins.variable} bg-background`}>
       <body className="font-sans antialiased">
         {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
   )

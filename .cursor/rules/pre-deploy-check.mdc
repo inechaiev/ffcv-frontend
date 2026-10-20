@@ -1,0 +1,21 @@
+---
+description: Before commit, push, or deploy, block test, scratch, and secret files
+alwaysApply: true
+---
+
+# Check the file list before upload
+
+Before `git add`, commit, push, or a Netlify deploy, inspect every path that would leave the machine. Read `git status` and the staged diff. Do not rely on memory of what was edited.
+
+Leave these out:
+
+- `.env` and any file with keys, tokens, or passwords. `.env.example` with placeholders is allowed.
+- `node_modules/`, `.next/`, `out/`, `dist/`, `*.tsbuildinfo`, logs
+- `AGENTS.md`, `CLAUDE.md`
+- One-off routes and scratch such as `app/dev-link-check/`, `app/dev-*/`, `/tmp/`, `/scratch/`
+- Fixtures, screenshots, and dumps created only to verify a change locally
+- `.vercel/` and `.netlify/`
+
+If such a file is present, delete it or leave it unstaged. Do not rename it to sneak it into the commit. Tell the user which paths were held back.
+
+`pnpm-lock.yaml`, source, and `.cursor/rules/` stay in the repository.
