@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { MatchDetail } from '@/components/match-detail'
 import { createClient } from '@/lib/supabase/server'
 import { formatLongDate, formatTime } from '@/lib/format'
+import { leagueLabel } from '@/lib/leagues'
 import type { Match } from '@/lib/types'
 
 export const revalidate = 60
@@ -34,11 +35,14 @@ export async function generateMetadata({
   const match = await getMatch(match_id)
   if (!match) return { title: 'Partido no encontrado' }
   const title = `${match.home_team} vs ${match.away_team}`
+  const competition = leagueLabel(match)
   const date = formatLongDate(match.match_date)
   const time = formatTime(match.match_time)
+  const round = match.jornada != null ? ` Jornada ${match.jornada}.` : ''
   return {
-    title,
-    description: `Detalles del partido ${title}. Fecha: ${date}. Hora: ${time}.${match.location ? ` Lugar: ${match.location}.` : ''}`,
+    title: `${title} | ${competition}`,
+    description: `${title}, ${competition}.${round} Fecha: ${date}. Hora: ${time}.${match.location ? ` Lugar: ${match.location}.` : ''}`,
+    alternates: { canonical: `/match/${match.match_id}` },
   }
 }
 

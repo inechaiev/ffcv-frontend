@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Poppins } from 'next/font/google'
+import { siteUrl } from '@/lib/site'
 import './globals.css'
 
 const inter = Inter({
@@ -16,9 +17,14 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: 'MatchVLC | Resultados y Horarios del Fútbol Valenciano',
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: 'MatchVLC | Resultados y Horarios del Fútbol Valenciano',
+    template: '%s | MatchVLC',
+  },
   description:
-    'Sigue todos los partidos del fútbol valenciano en MatchVLC. Resultados en directo, clasificaciones y horarios actualizados de las ligas de la Comunitat Valenciana.',
+    'Resultados, horarios y jornadas de las ligas de la Comunitat Valenciana. Busca tu equipo y competición en MatchVLC.',
+  robots: { index: true, follow: true },
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
     shortcut: '/favicon.svg',

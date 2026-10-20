@@ -1,5 +1,7 @@
+import type { Metadata } from 'next'
 import { MatchesView } from '@/components/matches-view'
 import { getAllMatches } from '@/lib/matches'
+import { firstQueryParam, scheduleMetadata } from '@/lib/site'
 
 export const revalidate = 60
 
@@ -7,9 +9,9 @@ type HomePageProps = {
   searchParams: Promise<{ league?: string | string[]; jornada?: string | string[] }>
 }
 
-function firstParam(value: string | string[] | undefined): string | null {
-  if (Array.isArray(value)) return value[0] ?? null
-  return value ?? null
+export async function generateMetadata({ searchParams }: HomePageProps): Promise<Metadata> {
+  const params = await searchParams
+  return scheduleMetadata(firstQueryParam(params.league), firstQueryParam(params.jornada))
 }
 
 export default async function Page({ searchParams }: HomePageProps) {
@@ -18,8 +20,8 @@ export default async function Page({ searchParams }: HomePageProps) {
     <MatchesView
       matches={await getAllMatches()}
       initialView="schedule"
-      initialLeague={firstParam(params.league)}
-      initialJornada={firstParam(params.jornada)}
+      initialLeague={firstQueryParam(params.league)}
+      initialJornada={firstQueryParam(params.jornada)}
     />
   )
 }
