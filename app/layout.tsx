@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next'
+import { Suspense } from 'react'
 import { Inter, Poppins } from 'next/font/google'
+import { GoogleAnalytics } from '@/components/google-analytics'
 import { siteUrl } from '@/lib/site'
 import './globals.css'
 
@@ -15,6 +17,9 @@ const poppins = Poppins({
   variable: '--font-poppins',
   display: 'swap',
 })
+
+const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-JSBK4GSLMZ'
+const googleAnalyticsId = /^G-[A-Z0-9]+$/.test(gaMeasurementId) ? gaMeasurementId : null
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -46,6 +51,11 @@ export default function RootLayout({
     <html lang="es" className={`${inter.variable} ${poppins.variable} bg-background`}>
       <body className="font-sans antialiased">
         {children}
+        {googleAnalyticsId ? (
+          <Suspense fallback={null}>
+            <GoogleAnalytics gaId={googleAnalyticsId} />
+          </Suspense>
+        ) : null}
       </body>
     </html>
   )
